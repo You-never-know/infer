@@ -199,7 +199,14 @@ let all_checkers =
              Payloads.Fields.buffer_overrun_analysis Payloads.Fields.config_impact_analysis
              Payloads.Fields.cost ConfigImpactAnalysis.checker
          in
-         [(checker, Clang); (checker, Java)] ) } ]
+         [(checker, Clang); (checker, Java)] ) } 
+  ; { checker= ReadCopyUpdateViolation
+    ; callbacks=
+        (let checker =
+           interprocedural Payloads.Fields.read_copy_update
+             ReadCopyUpdateViolations.checker
+         in
+         [(checker, Clang)] ) } ]
 
 
 let get_active_checkers () =

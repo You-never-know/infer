@@ -38,6 +38,7 @@ type t =
   | Starvation
   | Topl
   | Uninit
+  | ReadCopyUpdateViolation
 [@@deriving equal, enumerate]
 
 (** per-language support for each checker *)

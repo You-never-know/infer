@@ -85,11 +85,11 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
       actuals loc (astate : Domain.t) =
     let open Domain in
     match ConcurrencyModels.get_lock_effect callee_pname actuals with
-    | Lock _ | GuardLock _ | GuardConstruct {acquire_now= true} ->
+    | Lock _ | GuardLock _ | RCULock _ |GuardConstruct {acquire_now= true} ->
         { astate with
           locks= LockDomain.acquire_lock astate.locks
         ; threads= ThreadsDomain.update_for_lock_use astate.threads }
-    | Unlock _ | GuardDestroy _ | GuardUnlock _ ->
+    | Unlock _ | GuardDestroy _ | GuardUnlock _ | RCUUnlock _ ->
         { astate with
           locks= LockDomain.release_lock astate.locks
         ; threads= ThreadsDomain.update_for_lock_use astate.threads }

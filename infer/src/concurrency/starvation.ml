@@ -298,7 +298,7 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
         let ret_base = (Var.of_id id, typ) in
         let actuals = hilexp_of_sils ~add_deref:false astate sil_actuals in
         match get_lock_effect callee actuals with
-        | Lock locks ->
+        | Lock locks | RCULock locks ->
             do_lock locks loc astate
         | GuardLock guard ->
             Domain.lock_guard tenv astate guard ~procname ~loc
@@ -309,7 +309,7 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
           | None ->
               log_parse_error "Couldn't parse lock in guard constructor" callee actuals ;
               astate )
-        | Unlock locks ->
+        | Unlock locks | RCUUnlock locks ->
             do_unlock locks astate
         | GuardUnlock guard ->
             Domain.unlock_guard astate guard

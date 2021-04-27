@@ -39,6 +39,7 @@ type t =
   | Starvation
   | Topl
   | Uninit
+  | ReadCopyUpdateViolation
 [@@deriving equal, enumerate]
 
 type support = NoSupport | ExperimentalSupport | Support
@@ -427,6 +428,14 @@ let config_unsafe checker =
       ; short_documentation= "Warns when values are used before having been initialized."
       ; cli_flags= Some {deprecated= []; show_in_help= true}
       ; enabled_by_default= true
+      ; activates= [] }
+  | ReadCopyUpdateViolation ->
+      { id= "rcu-violation"
+      ;  kind = UserFacing {title = "Read Copy Update violation"; markdown_body= ""}
+      ;  support = supports_clang
+      ;  short_documentation= "Detects Read Copy Update violations"
+      ;  cli_flags= Some {deprecated: string list = []; show_in_help= true}
+      ; enabled_by_default = false
       ; activates= [] }
 
 

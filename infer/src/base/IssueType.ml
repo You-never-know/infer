@@ -1032,6 +1032,11 @@ let wrong_argument_number =
 
 let unreachable_cost_call ~kind = register_cost ~enabled:false ~kind "%s_UNREACHABLE_AT_EXIT"
 
+let read_copy_update_violation: t = 
+  register ~id:"ReadCopyUpdate_Error" ~enabled:true Error ReadCopyUpdateViolation
+  ~hum: "ReadCopyUpdate Violation"
+  ~user_documentation: "TBD"
+
 (* register enabled cost issues *)
 let is_autoreleasepool_size_issue =
   let autoreleasepool_size_issues = ref IssueSet.empty in

@@ -26,7 +26,8 @@ type t =
   ; siof: SiofDomain.Summary.t option
   ; starvation: StarvationDomain.summary option
   ; nullsafe: NullsafeSummary.t option
-  ; uninit: UninitDomain.Summary.t option }
+  ; uninit: UninitDomain.Summary.t option
+  ; read_copy_update: ReadCopyUpdateDomain.t option}
 [@@deriving fields]
 
 let yojson_of_t {pulse} =
@@ -60,6 +61,7 @@ let fields =
     ~starvation:(fun f -> mk f "Starvation" StarvationDomain.pp_summary)
     ~nullsafe:(fun f -> mk f "Nullsafe" NullsafeSummary.pp)
     ~uninit:(fun f -> mk f "Uninitialised" UninitDomain.Summary.pp)
+    ~read_copy_update:(fun f -> mk f "ReadCopyUpdateViolation" ReadCopyUpdateDomain.pp)
 
 
 let pp pe f payloads =
@@ -85,4 +87,5 @@ let empty =
   ; siof= None
   ; starvation= None
   ; nullsafe= None
-  ; uninit= None }
+  ; uninit= None
+  ; read_copy_update= None }

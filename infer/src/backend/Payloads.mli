@@ -30,7 +30,8 @@ include sig
     ; siof: SiofDomain.Summary.t option
     ; starvation: StarvationDomain.summary option
     ; nullsafe: NullsafeSummary.t option
-    ; uninit: UninitDomain.Summary.t option }
+    ; uninit: UninitDomain.Summary.t option
+    ; read_copy_update: ReadCopyUpdateDomain.t option }
   [@@deriving fields, yojson_of]
 end
 

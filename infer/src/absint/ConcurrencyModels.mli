@@ -11,6 +11,8 @@ open! IStd
 type lock_effect =
   | Lock of HilExp.t list  (** simultaneously acquire a list of locks *)
   | Unlock of HilExp.t list  (** simultaneously release a list of locks *)
+  | RCULock of HilExp.t list (** List of locks maybe *)
+  | RCUUnlock of HilExp.t list (** List of unlocks maybe *)
   | LockedIfTrue of HilExp.t list  (** simultaneously attempt to acquire a list of locks *)
   | GuardConstruct of {guard: HilExp.t; lock: HilExp.t; acquire_now: bool}
       (** mutex guard construction - clang only *)

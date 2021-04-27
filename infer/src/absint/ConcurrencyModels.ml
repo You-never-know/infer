@@ -11,6 +11,8 @@ module L = Logging
 type lock_effect =
   | Lock of HilExp.t list
   | Unlock of HilExp.t list
+  | RCULock of HilExp.t list
+  | RCUUnlock of HilExp.t list
   | LockedIfTrue of HilExp.t list
   | GuardConstruct of {guard: HilExp.t; lock: HilExp.t; acquire_now: bool}
   | GuardLock of HilExp.t
@@ -116,8 +118,12 @@ end = struct
     fun pname -> QualifiedCppName.Match.match_qualifiers matcher (Procname.get_qualifiers pname)
 
 
-  let is_lock, is_unlock, is_trylock, is_std_lock =
-    (* TODO std::try_lock *)
+  let (is_lock
+      , is_unlock
+      , is_trylock
+      , is_std_lock
+      , is_rcu_lock
+      , is_rcu_unlock) =
     let mk_model_matcher ~f =
       let lock_methods =
         List.concat_map lock_models ~f:(fun mdl ->
@@ -128,7 +134,9 @@ end = struct
     ( mk_model_matcher ~f:(fun mdl -> mdl.lock)
     , mk_model_matcher ~f:(fun mdl -> mdl.unlock)
     , mk_model_matcher ~f:(fun mdl -> mdl.trylock)
-    , mk_matcher ["std::lock"] )
+    , mk_matcher ["std::lock"]
+    , mk_matcher ["urcu_memb_read_lock"]
+    , mk_matcher ["urcu_memb_read_unlock"] )
 
 
   (** C++ guard classes used for scope-based lock management. NB we pretend all classes below
@@ -222,6 +230,8 @@ end = struct
     let fst_arg = match actuals with x :: _ -> [x] | _ -> [] in
     if is_std_lock pname then Lock actuals
     else if is_lock pname then Lock fst_arg
+    else if is_rcu_lock pname then RCULock fst_arg
+    else if is_rcu_unlock pname then RCUUnlock fst_arg
     else if is_unlock pname then Unlock fst_arg
     else if is_trylock pname then LockedIfTrue fst_arg
     else if is_guard_constructor pname then (
