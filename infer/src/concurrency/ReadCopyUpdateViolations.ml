@@ -30,7 +30,7 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
         (* RCU lock *)
         | RCULock (_locks: HilExp.t list) -> 
             (* Domain.rcu_lock astate *)
-            RacerDDomain.LockDomain.
+            Domain.rcu_lock astate
         (* RCU unlock *)
         | RCUUnlock (_locks: HilExp.t list) -> 
             Domain.rcu_unlock astate
