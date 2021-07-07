@@ -10,6 +10,7 @@ module F = Format
 module Hash = Caml.Hashtbl 
 module Set = Caml.Set
 module LockNames = Set.Make (String)
+module List = Caml.List
 
 (*                                 Types                                               *)
 (************************************************************************************* *)
@@ -52,15 +53,17 @@ let initial = {preconditions = prec; current_state = lock_info_hash_table; probl
 (************************************************************************************* *)
 let add_lock_name name astate = LockNames.add name 
 
+(** Add iterators, will be needed in violation checks *)
+
 
 (**                 Hash table operations  (name = lock_name)                          *)
 (************************************************************************************* *)
 (** true/false *)
-let check_if_lock_in_current_state name astate = Hash.mem astate.current_state name  
+let lock_in_current_state name astate = Hash.mem astate.current_state name  
 
-let check_if_lock_in_preconditions name astate = Hash.mem astate.preconditions name  
+let lock_in_preconditions name astate = Hash.mem astate.preconditions name  
 
-let add_lock_to_current_state name score astate = if not (check_if_lock_in_current_state name astate) 
+let add_lock_to_current_state name score astate = if not (lock_in_current_state name astate) 
                                                   then Hash.add astate.current_state name score
                                                           
 
@@ -70,7 +73,7 @@ let increment_lock_state name astate = Hash.replace astate.current_state name ( 
 
 let decrement_lock_state name astate = Hash.replace astate.current_state name ( (get_lock_state name astate) - 1)
 
-let add_precondition name score astate = if not (check_if_lock_in_preconditions name astate) then Hash.add astate.preconditions name score 
+let add_precondition name score astate = if not (lock_in_preconditions name astate) then Hash.add astate.preconditions name score 
 
 let remove_precondition name astate = Hash.remove astate.preconditions name
 
@@ -79,15 +82,21 @@ let get_precondition_state name astate = Hash.find astate.preconditions name
 let check_if_precondition_valid name astate = if (get_precondition_state name astate) <> 0 then true
                                               else false
 
-(* let check_if_loc_in_table name loc 
+(** Get all loc for the given lock *)
+let get_all_specified_loc name astate = Hash.find_all astate.problem_loc name
 
-let add_problem_loc name loc astate = 
-*)
+let loc_in_table name loc astate = List.mem loc (get_all_specified_loc name astate)  
+
+let add_problem_loc name loc astate = if not (loc_in_table name loc astate) then Hash.add astate.problem_loc name loc
+
+(** Problem if there are multiple problems with the same lock -> some of the problems may stay, multiple calls may be needed *)
+let remove_problems_with_lock name astate = Hash.remove astate.problem_loc name
+
 
 (*                              Operators                                              *)
 (************************************************************************************* *)
 (** *)
-let leq ~lhs ~rhs = lhs.current_state.lock_score <= rhs.current_state.lock_score 
+let leq ~lhs ~rhs = (Hash.length lhs.preconditions + Hash.length lhs.current_state + Hash.length lhs.problem_loc) <=  (Hash.length rhs.preconditions + Hash.length rhs.current_state + Hash.length rhs.problem_loc)
 
 (** *)
 let join a b = if a.current_state.lock_score > b.current_state.lock_score then a
