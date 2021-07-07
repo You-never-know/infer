@@ -27,7 +27,7 @@ type t =
   ; starvation: StarvationDomain.summary option
   ; nullsafe: NullsafeSummary.t option
   ; uninit: UninitDomain.Summary.t option
-  ; read_copy_update: ReadCopyUpdateDomain.t option}
+  ; read_copy_update: ReadCopyUpdateDomain.summary option}
 [@@deriving fields]
 
 let yojson_of_t {pulse} =

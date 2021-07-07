@@ -7,23 +7,102 @@
 
 open! IStd
 module F = Format
+module Hash = Caml.Hashtbl 
+module Set = Caml.Set
+module LockNames = Set.Make (String)
 
-type t = int
+(*                                 Types                                               *)
+(************************************************************************************* *)
 
-let leq ~lhs ~rhs = lhs <= rhs 
+(** End info from every procedure, 
+    1. preconditions -> conditions that need to be met 
+    2. current_state -> state at the end of the procedure
+    3. problem_loc -> line of code where is a problem located  
+    4. lock_names -> set of locks that were encountered in code  
+*)                 
+type procedure_info = { mutable preconditions   : (string, int) Hash.t ;
+                        mutable current_state   : (string, int) Hash.t ;
+                        mutable problem_loc     : (string, int) Hash.t ;
+                        mutable lock_names      : LockNames.t            }
 
-let join a b = max a b
 
+type t = procedure_info
+
+(*                              Initialization                                         *)
+(************************************************************************************* *)
+(** Keeps current state *)
+let lock_info_hash_table = Hash.create 11
+
+(** Keeps info about preconditions *)
+let prec = Hash.create 5
+
+(** Hash map of loc where a problem may be located *)
+let problem_hash_table = Hash.create 11 
+
+(** Keep names of found locks *)
+let lock_name_set = LockNames.empty
+
+(** General lock for output, in a case where a locked lock is needed and multiple locks are detected *)
+let any_rcu_lock = "Any RCU lock"
+
+(** Initial state of the analysis *)
+let initial = {preconditions = prec; current_state = lock_info_hash_table; problem_loc = problem_hash_table; lock_names = lock_name_set}
+
+(**                                 Set operations                                     *)
+(************************************************************************************* *)
+let add_lock_name name astate = LockNames.add name 
+
+
+(**                 Hash table operations  (name = lock_name)                          *)
+(************************************************************************************* *)
+(** true/false *)
+let check_if_lock_in_current_state name astate = Hash.mem astate.current_state name  
+
+let check_if_lock_in_preconditions name astate = Hash.mem astate.preconditions name  
+
+let add_lock_to_current_state name score astate = if not (check_if_lock_in_current_state name astate) 
+                                                  then Hash.add astate.current_state name score
+                                                          
+
+let get_lock_state name astate = Hash.find astate.current_state name
+
+let increment_lock_state name astate = Hash.replace astate.current_state name ( (get_lock_state name astate) + 1)
+
+let decrement_lock_state name astate = Hash.replace astate.current_state name ( (get_lock_state name astate) - 1)
+
+let add_precondition name score astate = if not (check_if_lock_in_preconditions name astate) then Hash.add astate.preconditions name score 
+
+let remove_precondition name astate = Hash.remove astate.preconditions name
+
+let get_precondition_state name astate = Hash.find astate.preconditions name
+
+let check_if_precondition_valid name astate = if (get_precondition_state name astate) <> 0 then true
+                                              else false
+
+(* let check_if_loc_in_table name loc 
+
+let add_problem_loc name loc astate = 
+*)
+
+(*                              Operators                                              *)
+(************************************************************************************* *)
+(** *)
+let leq ~lhs ~rhs = lhs.current_state.lock_score <= rhs.current_state.lock_score 
+
+(** *)
+let join a b = if a.current_state.lock_score > b.current_state.lock_score then a
+               else b
+(** *)
 let widen ~prev ~next ~num_iters:_ = join prev next
+(************************************************************************************* *)
+                                 
 
-let pp fmt astate = F.fprintf fmt "%d" astate
+let pp fmt astate = F.fprintf fmt "%d" astate.problem_loc
 
 let rcu_lock locks_locked = locks_locked + 1
 
 let rcu_unlock locks_locked = locks_locked - 1 
 
 let has_violation locks_locked = locks_locked <> 0  
-
-let initial = 0
 
 type summary = t

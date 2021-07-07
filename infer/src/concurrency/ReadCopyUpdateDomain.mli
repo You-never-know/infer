@@ -6,15 +6,11 @@
  *)
 
 open! IStd
-
 include AbstractDomain.S
+module Hash = Caml.Hashtbl
 
-val rcu_lock : t -> t
+val check_if_lock_in_current_state   : string -> t -> bool
 
-val rcu_unlock : t -> t
-
-val has_violation : t -> bool
-
-val initial : t
+val initial                          : t
 
 type summary = t
