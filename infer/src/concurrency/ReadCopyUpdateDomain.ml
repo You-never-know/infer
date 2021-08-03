@@ -1,141 +1,131 @@
 (*
- * Copyright (c) Facebook, Inc. and its affiliates.
+ * Copyright (c) 2020-present
+ *
+ * Daniel Marek (xmarek72@stud.fit.vutbr.cz)
+ * Automated Analysis and Verification Research Group (VeriFIT)
+ * Brno University of Technology, Czech Republic
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *)
 
+
 open! IStd
 module F = Format
 module Set = Caml.Set
 
-(*                                 Types                                               *)
-(************************************************************************************* *)
 
-type element = 
-    { lock_name: string; 
-      lock_score: int;
-      access_path: AccessPath.t
-    }
+(** Types *)
+(*********************************************************** *)
 
+type lockInfo = 
+{             lockName    : Procname.t;  (** name of the lock *)
+      mutable lockScore   : int;         (** score of the lock ("2" locked 2 times|"-2" twice unlocked *)
+              accessPath  : AccessPath.t;(** access path of the lock *)
+              loc         : Location.t   (** line of code where the lock was locked *)
+}
 
-module LockSet = Set.Make (struct 
-        type t = element
-        let compare a b = String.compare a.lock_name b.lock_name 
-    end)
+module LockSet = Set.Make(struct
+        type t = lockInfo
 
+        let compare a b = Procname.compare a.lockName b.lockName 
+end)
 
-type t = LockSet.t 
-
-(** End info from every procedure, 
-    1. preconditions -> conditions that need to be met 
-    2. current_state -> state at the end of the procedure
-    3. problem_loc -> line of code where is a problem located  
-    4. lock_names -> set of locks that were encountered in code  
-                
-type astate = {         mutable preconditions   : (string, int) Hash.t ;
-                        mutable current_state   : (string, int) Hash.t ;
-                        mutable problem_loc     : (string, LocSet.t) Hash.t ;
-                        mutable lock_names      : LockNames.t            }
+let lockSetPrint fmt lock = F.fprintf fmt "Lock %a, %a on %a has score: %a" Procname.pp lock.lockName AccessPath.pp lock.accessPath Location.pp lock.loc Int.pp lock.lockScore
 
 
-type t = astate
+type problem = 
+{
+            procName        : Procname.t; (** Name of the function where a problem was detected *)
+            loc             : Location.t; (** Line of code, where the problem was detected *)
+            problemName     : string;     (** Info about the problem *)
+            issue           : IssueType.t (** Type of the issue *)
+}
+
+(* )
+module ProblemSet = Set.Make(struct
+        type t = problem
+
+        let compare a b = Location.compare a.loc b.loc
+end)
+let problemSetPrint fmt problem = F.fprintf fmt "On line %a is a problem: %a with function %a (%a)" Location.pp problem.loc String.pp problem.problemName Procname.pp problem.procName IssueType.pp problem.issue
 *)
-(*                              Initialization                                         *)
-(************************************************************************************* *)
-(** Keeps current state *)
-let lock_info_hash_table = Hash.create (module String) 
 
-(** Keeps info about preconditions *)
-let prec = Hash.create (module String) 
+type t = { (** abstract state *)
+        precon: LockSet.t; (** Preconditions -> Lock scores + identifications that need to be met *)
+        post: LockSet.t  (** State after the function *)
+}
 
-(** Hash map of loc where a problem may be located *)
-let problem_hash_table = Hash.create (module String) 
+(** Init *)
+(*********************************************************** *)
 
-(** Keep names of found locks *)
-let lock_name_set = LockNames.empty
+let initial = {
+        precon = LockSet.empty;
+        post = LockSet.empty
+}
+(* )
+let initialProblems = ProblemSet.empty
+*)
 
-(** General lock for output, in a case where a locked lock is needed and multiple locks are detected *)
-let any_rcu_lock = "Any RCU lock"
+(** Abstract state functions *)
+(*********************************************************** *)
 
-(** Initial state of the analysis *)
-let initial = {preconditions = prec; current_state = lock_info_hash_table; problem_loc = problem_hash_table; lock_names = lock_name_set}
+let createLock lockName lockScore accessPath loc = {lockName = lockName; lockScore = lockScore; accessPath = accessPath; loc = loc} 
 
-(**                                 Set operations                                     *)
-(************************************************************************************* *)
-let add_lock_name name astate = LockNames.add name astate.lock_names 
-
-(** Add iterators, will be needed in violation checks *)
-
-
-(**                 Hash table operations  (name = lock_name)                          *)
-(************************************************************************************* *)
-(** true/false *)
-let lock_in_current_state name astate = Hash.mem astate.current_state name  
-
-let lock_in_preconditions name astate = Hash.mem astate.preconditions name  
-
-(** Base.Hashtbl.add_exn checks for duplicates and does not add them to table *)
-let add_lock_to_current_state name score astate = Hash.add_exn astate.current_state ~key:name ~data:score
-                                                          
-let get_lock_state name astate = Hash.find_exn astate.current_state name
-
-let increment_lock_state name astate = Hash.set astate.current_state ~key:name ~data:((get_lock_state name astate) + 1)
-
-let decrement_lock_state name astate = Hash.set astate.current_state ~key:name ~data:((get_lock_state name astate) - 1)
-
-(** Base.Hashtbl.add checks for duplicates and does not add them to table *)
-let add_precondition name score astate = Hash.add_exn astate.preconditions ~key:name ~data:score 
-
-let remove_precondition name astate = Hash.remove astate.preconditions name
-
-let get_precondition_state name astate = Hash.find_exn astate.preconditions name
-
-(** If a state of precondition is met (state = 0), it can be removed from the hash table *)
-let check_if_precondition_valid name astate = if (get_precondition_state name astate) <> 0 then true
-                                              else false
-
-(** Get set of loc associated with the given lock *)
-let get_all_specified_loc name astate = Hash.find_exn astate.problem_loc name
-
-let loc_in_table name loc astate = LocSet.mem loc (get_all_specified_loc name astate)  
-
-(** If no problem detected for the lock, add new set for the lock,
-    if a set already exists, add a new loc to it and replace it inside the hash map 
-**)
-let add_problem_loc name loc astate = 
-    match (Hash.find astate.problem_loc name) with
-    | Some set -> Hash.set astate.problem_loc ~key:name ~data:(LocSet.add loc set)
-    | None -> Hash.add_exn astate.problem_loc ~key:name ~data:(LocSet.singleton loc)  
-
-(** Problem if there are multiple problems with the same lock -> some of the problems may stay, multiple calls may be needed *)
-let remove_problems_with_lock name astate = Hash.remove astate.problem_loc name
+let addLock lock astate = let newElement = lock in 
+                          let newPost = LockSet.add newElement astate.post in 
+                          {precon = astate.precon; post = newPost}
+                                                  
 
 
-(*                              Operators                                              *)
-(************************************************************************************* *)
-(** TODO/maybe -> check if the right one has all elements from the left one *)
-let leq ~lhs ~rhs = (Hash.length lhs.preconditions + Hash.length lhs.current_state + Hash.length lhs.problem_loc) <=  (Hash.length rhs.preconditions + Hash.length rhs.current_state + Hash.length rhs.problem_loc)
+let member lockName astate = LockSet.mem lockName astate.post
+(* )
+let printProblems fmt problems = ProblemSet.iter (problemSetPrint fmt) problems 
 
 
-(** Merge hast tables and sets together *)
-let join a b = Hash.merge_into ~src:a.current_state ~dst:b.current_state ~f:merge_function 
-              (* let preconditions_merge = Hash.merge   a.preconditions b.preconditions ~f:merge_function             in
-               let problem_loc_merge = Hash.merge     a.problem_loc   b.problem_loc   ~f:problem_loc_merge_function in
-               let lock_names_merge = LockNames.union a.lock_names    b.lock_names                                  in 
-               {preconditions = preconditions_merge; current_state = current_state_merge; problem_loc = problem_loc_merge; lock_names = lock_names_merge}   *)
+(** TODO *)
+let member lock_name astate = LockSet.mem lock_name astate
+
+let find_lock lock_name astate = LockSet.find lock_name astate
+
+let increment_lock_score lock_name astate = 
+        if member lock_name astate then let element = find_lock lock_name astate in 
+                                            let new_element = {lock_name = element.lock_name; 
+                                                lock_score = element.lock_score + 1; 
+                                                access_path = element.access_path } in
+                                                        let remove_old = LockSet.remove lock_name astate in 
+                                                        LockSet.add new_element (remove_old) 
+        else astate  
+                                      
+
+let decrement_lock_score lock_name astate = if member lock_name astate then let element = find_lock lock_name astate         in 
+                                                                            let new_element = {lock_name = element.lock_name; 
+                                                                                         lock_score = element.lock_score - 1; 
+                                                                                         access_path = element.access_path } in
+                                                                            let remove_old = LockSet.remove lock_name astate in 
+                                                                            LockSet.add new_element (remove_old) 
+                                            else astate                                        
+
+*)
+
+(** Operands *)
+(*********************************************************** *)
+
+let leq ~lhs ~rhs = LockSet.subset lhs.precon rhs.precon && LockSet.subset lhs.post rhs.post  
+
+(** Unite sets *)
+let join a b = let newPrecon = LockSet.union a.precon b.precon in
+               let newPost   = LockSet.union a.post b.post     in
+               {precon = newPrecon; post = newPost}
                 
-(** *)
+(** We join and join *)
 let widen ~prev ~next ~num_iters:_ = join prev next
 (************************************************************************************* *)
                                  
-(** TODO *)
-let pp fmt astate = F.fprintf fmt "%d" astate.problem_loc
+(** Print lock name and score *)
+let pp fmt astate = LockSet.iter (lockSetPrint fmt) astate.post 
 
-let rcu_lock locks_locked = locks_locked + 1
-
-let rcu_unlock locks_locked = locks_locked - 1 
-
-let has_violation locks_locked = locks_locked <> 0  
+(** Check all lock scores 
+let has_violation locks_locked = true  *)
 
 type summary = t

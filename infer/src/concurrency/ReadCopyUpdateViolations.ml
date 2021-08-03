@@ -1,5 +1,9 @@
 (*
- * Copyright (c) Facebook, Inc. and its affiliates.
+ * Copyright (c) 2020-present
+ *
+ * Daniel Marek (xmarek72@stud.fit.vutbr.cz)
+ * Automated Analysis and Verification Research Group (VeriFIT)
+ * Brno University of Technology, Czech Republic
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -11,7 +15,7 @@ module L = Logging
 
 module TransferFunctions (CFG : ProcCfg.S) = struct
   module CFG = CFG
-  module Domain = ReadCopyUpdateDomain
+  module Domain = ReadCopyUpdateDomain 
 
   type analysis_data = ReadCopyUpdateDomain.t InterproceduralAnalysis.t
 
@@ -21,21 +25,23 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
       {InterproceduralAnalysis.proc_desc= _; tenv= _; analyze_dependency= _; _} _
       (instr : HilInstr.t) =
     match instr with
-    | Call (_return_opt, Direct callee_procname, actuals, _, _loc) -> (
+    | Call (( _path : AccessPath.base),(Direct (calleeProc : Procname.t) : HilInstr.call), 
+           (actuals : HilExp.t list), (_ : CallFlags.t), (_loc : Location.t) ) -> (
         (* function call [return_opt] := invoke [callee_procname]([actuals]) *)
         (* L.progress "Computed post %a \n" Procname.pp callee_procname; *)
+        (** Make the lock, test if it is already in set, if not add with score 0, let increment or decrement in the next section, it is is do nothing *)
         match 
-          ConcurrencyModels.get_lock_effect callee_procname actuals
+          ConcurrencyModels.get_lock_effect calleeProc actuals
         with 
         (* RCU lock *)
         | RCULock (_locks: HilExp.t list) -> 
             (* Domain.rcu_lock astate *)
-            Domain.rcu_lock astate
+           astate 
         (* RCU unlock *)
         | RCUUnlock (_locks: HilExp.t list) -> 
-            Domain.rcu_unlock astate
+            astate
         | _ ->
-          astate )
+          astate ) 
     | Assign (_lhs_access_path, _rhs_exp, _loc) ->
         (* an assignment [lhs_access_path] := [rhs_exp] *)
         astate
@@ -59,7 +65,7 @@ module Analyzer = LowerHil.MakeAbstractInterpreter (TransferFunctions (CFG))
 
 (** Report an error when we have acquired more resources than we have released *)
 let report_if_violated {InterproceduralAnalysis.proc_desc; err_log; _} post =
-  let result = ReadCopyUpdateDomain.has_violation post in
+  let result = true in
   if result then
     let last_loc = Procdesc.Node.get_loc (Procdesc.get_exit_node proc_desc) in
     let message = F.asprintf "RCU locks locked at the end of the procedure: %a" ReadCopyUpdateDomain.pp post in
