@@ -19,24 +19,24 @@ module Set = Caml.Set
 (*********************************************************** *)
 
 type lockInfo = 
-{             lockName    : Procname.t;  (** name of the lock *)
-      mutable lockScore   : int;         (** score of the lock ("2" locked 2 times|"-2" twice unlocked *)
-              accessPath  : AccessPath.t;(** access path of the lock *)
-              loc         : Location.t   (** line of code where the lock was locked *)
+{             lockName    : string;         (** name of the lock *)
+      mutable lockScore   : int;            (** score of the lock ("2" locked 2 times|"-2" twice unlocked *)
+              accessPath  : AccessPath.base;(** access path of the lock *)
+              loc         : Location.t      (** line of code where the lock was locked *)
 }
 
 module LockSet = Set.Make(struct
         type t = lockInfo
 
-        let compare a b = Procname.compare a.lockName b.lockName 
+        let compare a b = String.compare a.lockName b.lockName 
 end)
 
-let lockSetPrint fmt lock = F.fprintf fmt "Lock %a, %a on %a has score: %a" Procname.pp lock.lockName AccessPath.pp lock.accessPath Location.pp lock.loc Int.pp lock.lockScore
+let lockSetPrint fmt lock = F.fprintf fmt "Lock %a on %a has score: %a" String.pp lock.lockName Location.pp lock.loc Int.pp lock.lockScore
 
 
 type problem = 
 {
-            procName        : Procname.t; (** Name of the function where a problem was detected *)
+            procName        : string; (** Name of the function where a problem was detected *)
             loc             : Location.t; (** Line of code, where the problem was detected *)
             problemName     : string;     (** Info about the problem *)
             issue           : IssueType.t (** Type of the issue *)
@@ -70,42 +70,32 @@ let initialProblems = ProblemSet.empty
 (** Abstract state functions *)
 (*********************************************************** *)
 
-let createLock lockName lockScore accessPath loc = {lockName = lockName; lockScore = lockScore; accessPath = accessPath; loc = loc} 
+let createLock lockName lockScore accessPath loc = Logging.progress "Computed post %a \n" Int.pp lockScore;{lockName = lockName; lockScore = lockScore; accessPath = accessPath; loc = loc} 
 
 let addLock lock astate = let newElement = lock in 
                           let newPost = LockSet.add newElement astate.post in 
                           {precon = astate.precon; post = newPost}
                                                   
+let member lock astate = LockSet.mem lock astate.post
 
+let unlock2lock lockName = if String.equal lockName "urcu_memb_read_unlock" then "urcu_memb_read_lock"
+                           else lockName
 
-let member lockName astate = LockSet.mem lockName astate.post
+let increaseLockScore lock astate = let currentLock = LockSet.find lock astate.post in
+                                    let newLock = createLock currentLock.lockName (currentLock.lockScore + 1) currentLock.accessPath currentLock.loc in
+                                    let removedSet = LockSet.remove currentLock astate.post in 
+                                    let newPost = LockSet.add newLock removedSet in 
+                                    {precon = astate.precon; post = newPost} 
+
+let decreaseLockScore lock astate = let currentLock = LockSet.find lock astate.post in
+                                    let newLock = createLock currentLock.lockName (currentLock.lockScore - 1) currentLock.accessPath currentLock.loc in
+                                    let removedSet = LockSet.remove currentLock astate.post in 
+                                    let newPost = LockSet.add newLock removedSet in 
+                                    {precon = astate.precon; post = newPost}                                     
+                                 
+    
 (* )
 let printProblems fmt problems = ProblemSet.iter (problemSetPrint fmt) problems 
-
-
-(** TODO *)
-let member lock_name astate = LockSet.mem lock_name astate
-
-let find_lock lock_name astate = LockSet.find lock_name astate
-
-let increment_lock_score lock_name astate = 
-        if member lock_name astate then let element = find_lock lock_name astate in 
-                                            let new_element = {lock_name = element.lock_name; 
-                                                lock_score = element.lock_score + 1; 
-                                                access_path = element.access_path } in
-                                                        let remove_old = LockSet.remove lock_name astate in 
-                                                        LockSet.add new_element (remove_old) 
-        else astate  
-                                      
-
-let decrement_lock_score lock_name astate = if member lock_name astate then let element = find_lock lock_name astate         in 
-                                                                            let new_element = {lock_name = element.lock_name; 
-                                                                                         lock_score = element.lock_score - 1; 
-                                                                                         access_path = element.access_path } in
-                                                                            let remove_old = LockSet.remove lock_name astate in 
-                                                                            LockSet.add new_element (remove_old) 
-                                            else astate                                        
-
 *)
 
 (** Operands *)

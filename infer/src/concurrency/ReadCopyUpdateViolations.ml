@@ -25,23 +25,27 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
       {InterproceduralAnalysis.proc_desc= _; tenv= _; analyze_dependency= _; _} _
       (instr : HilInstr.t) =
     match instr with
-    | Call (( _path : AccessPath.base),(Direct (calleeProc : Procname.t) : HilInstr.call), 
-           (actuals : HilExp.t list), (_ : CallFlags.t), (_loc : Location.t) ) -> (
+    | Call (( path : AccessPath.base),(Direct (calleeProc : Procname.t) : HilInstr.call), 
+           (actuals : HilExp.t list), (_ : CallFlags.t), (loc : Location.t) ) -> (
         (* function call [return_opt] := invoke [callee_procname]([actuals]) *)
-        (* L.progress "Computed post %a \n" Procname.pp callee_procname; *)
-        (** Make the lock, test if it is already in set, if not add with score 0, let increment or decrement in the next section, it is is do nothing *)
+        (* L.progress "Computed post %a \n" Location.pp loc; *)
         match 
           ConcurrencyModels.get_lock_effect calleeProc actuals
         with 
         (* RCU lock *)
         | RCULock (_locks: HilExp.t list) -> 
-            (* Domain.rcu_lock astate *)
-           astate 
+              (* Domain.rcu_lock astate *)
+              let lock = Domain.createLock (Procname.to_string calleeProc) 1 path loc in 
+              if Domain.member lock astate then Domain.increaseLockScore lock astate
+              else Domain.addLock lock astate
         (* RCU unlock *)
         | RCUUnlock (_locks: HilExp.t list) -> 
-            astate
+              let lockName = Domain.unlock2lock (Procname.to_string calleeProc) in 
+              let lock = Domain.createLock lockName (-1) path loc in 
+              if Domain.member lock astate then Domain.decreaseLockScore lock astate
+              else Domain.addLock lock astate
         | _ ->
-          astate ) 
+           Logging.progress "Som tu %a \n" String.pp  (Procname.to_string calleeProc);astate ) 
     | Assign (_lhs_access_path, _rhs_exp, _loc) ->
         (* an assignment [lhs_access_path] := [rhs_exp] *)
         astate
