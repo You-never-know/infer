@@ -2,6 +2,7 @@
  * Copyright (c) 2020-present
  *
  * Daniel Marek (xmarek72@stud.fit.vutbr.cz)
+ * Prof. Ing. Tomáš Vojnar Ph.D. (vojnar@fit.vut.cz)
  * Automated Analysis and Verification Research Group (VeriFIT)
  * Brno University of Technology, Czech Republic
  *
@@ -21,12 +22,23 @@ type lockInfo =
 
 type problem = 
 {
-            procName        : string; (** Name of the function where a problem was detected *)
+            lockNeeded      : bool;       (** In a case of rcu_dereference, when no lock has been used yet, or multiple locks are used and not one is locked, if true -> false this probme is removed *)
+            problemLock     : lockInfo;   (** Info about a problematic lock, in a case of lock score going to 0, problem is removed *)
+            procName        : string;     (** Name of the function where a problem was detected *)
             loc             : Location.t; (** Line of code, where the problem was detected *)
             problemName     : string;     (** Info about the problem *)
             issue           : IssueType.t (** Type of the issue *)
 }
 
+module Summary : sig
+
+      val makeSummary      : t -> t      (** Converts an abstract state to a summary. *)
+
+      val updateSummary    : t -> t -> t (** Updates a current summary with abstract state *)
+
+      val makeFinalSummary : t -> t -> t (** Take all the problems and lock states and joing them together *)
+
+end
 
 val createLock                 : string -> int -> AccessPath.base -> Location.t -> lockInfo
 

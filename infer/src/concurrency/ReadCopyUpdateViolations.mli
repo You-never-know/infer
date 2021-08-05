@@ -2,6 +2,7 @@
  * Copyright (c) 2020-present
  *
  * Daniel Marek (xmarek72@stud.fit.vutbr.cz)
+ * Prof. Ing. Tomáš Vojnar Ph.D. (vojnar@fit.vut.cz)
  * Automated Analysis and Verification Research Group (VeriFIT)
  * Brno University of Technology, Czech Republic
  *

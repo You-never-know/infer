@@ -2,6 +2,7 @@
  * Copyright (c) 2020-present
  *
  * Daniel Marek (xmarek72@stud.fit.vutbr.cz)
+ * Prof. Ing. Tomáš Vojnar Ph.D. (vojnar@fit.vut.cz)
  * Automated Analysis and Verification Research Group (VeriFIT)
  * Brno University of Technology, Czech Republic
  *
@@ -67,6 +68,23 @@ module CFG = ProcCfg.Normal
 (* Create an intraprocedural abstract interpreter from the transfer functions defined earlier*)
 module Analyzer = LowerHil.MakeAbstractInterpreter (TransferFunctions (CFG))
 
+
+(**
+Plan
+
+1. Create -> createSummary function -> result from the checker function will be an parameter into the function
+2. in checker function change initial to keep the info from previous functions // think about using summary vs continuing with the info
+    -> summary can be used just as a set of problems to be reported in the end 
+3. rework the report function to be called just at the end, where it will report all the issues 
+
+
+Maybe: create summary (Actual state + problems found)
+
+!!!!!!!!!!!!!!!!!!!! Idea !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Summary holds the problems that cannot be fixed, at the end a final summary is created with all the problems from abstract state, and this summary is forwarded into a print function that prints all the problems 
+
+ *)
+
 (** Report an error when we have acquired more resources than we have released *)
 let report_if_violated {InterproceduralAnalysis.proc_desc; err_log; _} post =
   let result = true in
@@ -75,6 +93,8 @@ let report_if_violated {InterproceduralAnalysis.proc_desc; err_log; _} post =
     let message = F.asprintf "RCU locks locked at the end of the procedure: %a" ReadCopyUpdateDomain.pp post in
     Reporting.log_issue proc_desc err_log ~loc:last_loc ReadCopyUpdateViolation
       IssueType.read_copy_update_violation message
+
+
 
 
 (** Main function into the checker--registered in RegisterCheckers *)

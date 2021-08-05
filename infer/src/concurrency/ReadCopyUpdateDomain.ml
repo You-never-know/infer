@@ -2,6 +2,7 @@
  * Copyright (c) 2020-present
  *
  * Daniel Marek (xmarek72@stud.fit.vutbr.cz)
+ * Prof. Ing. Tomáš Vojnar Ph.D. (vojnar@fit.vut.cz)
  * Automated Analysis and Verification Research Group (VeriFIT)
  * Brno University of Technology, Czech Republic
  *
@@ -36,36 +37,37 @@ let lockSetPrint fmt lock = F.fprintf fmt "Lock %a on %a has score: %a" String.p
 
 type problem = 
 {
-            procName        : string; (** Name of the function where a problem was detected *)
+            lockNeeded      : bool;       (** In a case of rcu_dereference, when no lock has been used yet, or multiple locks are used and not one is locked, if true -> false this probme is removed *)
+            problemLock     : lockInfo;   (** Info about a problematic lock, in a case of lock score going to 0, problem is removed *)
+            procName        : string;     (** Name of the function where a problem was detected *)
             loc             : Location.t; (** Line of code, where the problem was detected *)
             problemName     : string;     (** Info about the problem *)
             issue           : IssueType.t (** Type of the issue *)
 }
 
-(* )
 module ProblemSet = Set.Make(struct
         type t = problem
 
         let compare a b = Location.compare a.loc b.loc
 end)
-let problemSetPrint fmt problem = F.fprintf fmt "On line %a is a problem: %a with function %a (%a)" Location.pp problem.loc String.pp problem.problemName Procname.pp problem.procName IssueType.pp problem.issue
+(* )
+let problemSetPrint fmt problem = F.fprintf fmt "On %a is a problem: %a with function %a (%a)" Location.pp problem.loc String.pp problem.problemName String.pp problem.procName IssueType.pp problem.issue
 *)
 
-type t = { (** abstract state *)
-        precon: LockSet.t; (** Preconditions -> Lock scores + identifications that need to be met *)
-        post: LockSet.t  (** State after the function *)
+type astate = { (** abstract state *)
+        problems: ProblemSet.t; (** Problems encountered *)
+        post    : LockSet.t     (** State after the function *)
 }
+
+type t = astate
 
 (** Init *)
 (*********************************************************** *)
 
 let initial = {
-        precon = LockSet.empty;
-        post = LockSet.empty
+        problems = ProblemSet.empty;
+        post     = LockSet.empty
 }
-(* )
-let initialProblems = ProblemSet.empty
-*)
 
 (** Abstract state functions *)
 (*********************************************************** *)
@@ -74,7 +76,7 @@ let createLock lockName lockScore accessPath loc = Logging.progress "Computed po
 
 let addLock lock astate = let newElement = lock in 
                           let newPost = LockSet.add newElement astate.post in 
-                          {precon = astate.precon; post = newPost}
+                          {problems = astate.problems; post = newPost}
                                                   
 let member lock astate = LockSet.mem lock astate.post
 
@@ -85,13 +87,13 @@ let increaseLockScore lock astate = let currentLock = LockSet.find lock astate.p
                                     let newLock = createLock currentLock.lockName (currentLock.lockScore + 1) currentLock.accessPath currentLock.loc in
                                     let removedSet = LockSet.remove currentLock astate.post in 
                                     let newPost = LockSet.add newLock removedSet in 
-                                    {precon = astate.precon; post = newPost} 
+                                    {problems = astate.problems; post = newPost} 
 
 let decreaseLockScore lock astate = let currentLock = LockSet.find lock astate.post in
                                     let newLock = createLock currentLock.lockName (currentLock.lockScore - 1) currentLock.accessPath currentLock.loc in
                                     let removedSet = LockSet.remove currentLock astate.post in 
                                     let newPost = LockSet.add newLock removedSet in 
-                                    {precon = astate.precon; post = newPost}                                     
+                                    {problems = astate.problems; post = newPost}                                     
                                  
     
 (* )
@@ -101,12 +103,12 @@ let printProblems fmt problems = ProblemSet.iter (problemSetPrint fmt) problems
 (** Operands *)
 (*********************************************************** *)
 
-let leq ~lhs ~rhs = LockSet.subset lhs.precon rhs.precon && LockSet.subset lhs.post rhs.post  
+let leq ~lhs ~rhs = ProblemSet.subset lhs.problems rhs.problems && LockSet.subset lhs.post rhs.post  
 
 (** Unite sets *)
-let join a b = let newPrecon = LockSet.union a.precon b.precon in
-               let newPost   = LockSet.union a.post b.post     in
-               {precon = newPrecon; post = newPost}
+let join a b = let newProblems = ProblemSet.union a.problems b.problems in
+               let newPost   = LockSet.union a.post b.post              in
+               {problems = newProblems; post = newPost}
                 
 (** We join and join *)
 let widen ~prev ~next ~num_iters:_ = join prev next
@@ -115,7 +117,12 @@ let widen ~prev ~next ~num_iters:_ = join prev next
 (** Print lock name and score *)
 let pp fmt astate = LockSet.iter (lockSetPrint fmt) astate.post 
 
-(** Check all lock scores 
-let has_violation locks_locked = true  *)
+module Summary = struct
+        (** Write a function, that will join post from astate and the current summary, and choose problems that will be added to the summary *)
+
+        let makeSummary astate = astate (** Create the initial summary *)
+        let updateSummary _astate summary = summary (** Update the current summary with the current abstract state *)
+        let makeFinalSummary astate summary = join astate summary (** Take all the problems and lock states and joing them together *)
+end 
 
 type summary = t
