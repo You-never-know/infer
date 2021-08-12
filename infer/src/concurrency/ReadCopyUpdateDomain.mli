@@ -32,11 +32,7 @@ type problem =
 
 module Summary : sig
 
-      val makeSummary      : t -> t      (** Converts an abstract state to a summary. *)
-
-      val updateSummary    : t -> t -> t (** Updates a current summary with abstract state *)
-
-      val makeFinalSummary : t -> t -> t (** Take all the problems and lock states and joing them together *)
+      val updateSummary        : t -> t -> t   (** Updates a current summary with abstract state *)
 
 end
 
@@ -44,13 +40,17 @@ val createLock                 : string -> int -> AccessPath.base -> Location.t 
 
 val addLock                    : lockInfo -> t -> t
 
-val member                     : lockInfo -> t -> bool
+val lockSetMember              : lockInfo -> t -> bool
 
 val unlock2lock                : string -> string 
 
 val increaseLockScore          : lockInfo  -> t -> t
 
 val decreaseLockScore          : lockInfo  -> t -> t
+
+val applySummary               : t -> t -> t
+
+val hasViolation               : t -> bool 
 
 val initial                    : t
 

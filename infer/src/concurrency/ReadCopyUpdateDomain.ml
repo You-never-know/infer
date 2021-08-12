@@ -14,6 +14,7 @@
 open! IStd
 module F = Format
 module Set = Caml.Set
+module List = Caml.List
 
 
 (** Types *)
@@ -42,7 +43,7 @@ type problem =
             procName        : string;     (** Name of the function where a problem was detected *)
             loc             : Location.t; (** Line of code, where the problem was detected *)
             problemName     : string;     (** Info about the problem *)
-            issue           : IssueType.t (** Type of the issue *)
+            issue           : IssueType.t (** Type of the issue used for identifing *)
 }
 
 module ProblemSet = Set.Make(struct
@@ -50,9 +51,9 @@ module ProblemSet = Set.Make(struct
 
         let compare a b = Location.compare a.loc b.loc
 end)
-(* )
-let problemSetPrint fmt problem = F.fprintf fmt "On %a is a problem: %a with function %a (%a)" Location.pp problem.loc String.pp problem.problemName String.pp problem.procName IssueType.pp problem.issue
-*)
+
+let problemSetPrint fmt problem = F.fprintf fmt "On %a is a problem: %a with function %a (%a)" Location.pp problem.loc 
+                                  String.pp problem.problemName String.pp problem.procName IssueType.pp problem.issue
 
 type astate = { (** abstract state *)
         problems: ProblemSet.t; (** Problems encountered *)
@@ -72,33 +73,33 @@ let initial = {
 (** Abstract state functions *)
 (*********************************************************** *)
 
-let createLock lockName lockScore accessPath loc = Logging.progress "Computed post %a \n" Int.pp lockScore;{lockName = lockName; lockScore = lockScore; accessPath = accessPath; loc = loc} 
+let createLock lockName lockScore accessPath loc = {lockName = lockName; lockScore = lockScore; accessPath = accessPath; loc = loc} 
 
-let addLock lock astate = let newElement = lock in 
-                          let newPost = LockSet.add newElement astate.post in 
+let addLock lock astate = let newElement = lock                               in 
+                          let newPost    = LockSet.add newElement astate.post in 
                           {problems = astate.problems; post = newPost}
                                                   
-let member lock astate = LockSet.mem lock astate.post
+let lockSetMember lock astate = LockSet.mem lock astate.post
 
 let unlock2lock lockName = if String.equal lockName "urcu_memb_read_unlock" then "urcu_memb_read_lock"
                            else lockName
 
-let increaseLockScore lock astate = let currentLock = LockSet.find lock astate.post in
-                                    let newLock = createLock currentLock.lockName (currentLock.lockScore + 1) currentLock.accessPath currentLock.loc in
-                                    let removedSet = LockSet.remove currentLock astate.post in 
-                                    let newPost = LockSet.add newLock removedSet in 
+let increaseLockScore lock astate = let currentLock = LockSet.find lock astate.post                                                                      in
+                                    let newLock     = createLock currentLock.lockName (currentLock.lockScore + 1) currentLock.accessPath currentLock.loc in
+                                    let removedSet  = LockSet.remove currentLock astate.post                                                             in 
+                                    let newPost     = LockSet.add newLock removedSet                                                                     in 
                                     {problems = astate.problems; post = newPost} 
 
-let decreaseLockScore lock astate = let currentLock = LockSet.find lock astate.post in
-                                    let newLock = createLock currentLock.lockName (currentLock.lockScore - 1) currentLock.accessPath currentLock.loc in
-                                    let removedSet = LockSet.remove currentLock astate.post in 
-                                    let newPost = LockSet.add newLock removedSet in 
+let decreaseLockScore lock astate = let currentLock = LockSet.find lock astate.post                                                                      in
+                                    let newLock     = createLock currentLock.lockName (currentLock.lockScore - 1) currentLock.accessPath currentLock.loc in
+                                    let removedSet  = LockSet.remove currentLock astate.post                                                             in 
+                                    let newPost     = LockSet.add newLock removedSet                                                                     in 
                                     {problems = astate.problems; post = newPost}                                     
                                  
     
-(* )
-let printProblems fmt problems = ProblemSet.iter (problemSetPrint fmt) problems 
-*)
+
+let _printProblems fmt problems = ProblemSet.iter (problemSetPrint fmt) problems 
+
 
 (** Operands *)
 (*********************************************************** *)
@@ -107,22 +108,63 @@ let leq ~lhs ~rhs = ProblemSet.subset lhs.problems rhs.problems && LockSet.subse
 
 (** Unite sets *)
 let join a b = let newProblems = ProblemSet.union a.problems b.problems in
-               let newPost   = LockSet.union a.post b.post              in
+               let newPost     = LockSet.union a.post b.post            in
                {problems = newProblems; post = newPost}
                 
 (** We join and join *)
 let widen ~prev ~next ~num_iters:_ = join prev next
+
+
+(** Other functions *)
 (************************************************************************************* *)
                                  
 (** Print lock name and score *)
-let pp fmt astate = LockSet.iter (lockSetPrint fmt) astate.post 
+let pp fmt astate = LockSet.iter (lockSetPrint fmt) astate.post (** Change to print all problems from the final summary *)
+
+let hasViolation summary = not (ProblemSet.is_empty summary.problems)
 
 module Summary = struct
-        (** Write a function, that will join post from astate and the current summary, and choose problems that will be added to the summary *)
-
-        let makeSummary astate = astate (** Create the initial summary *)
-        let updateSummary _astate summary = summary (** Update the current summary with the current abstract state *)
-        let makeFinalSummary astate summary = join astate summary (** Take all the problems and lock states and joing them together *)
+                        
+        let updateSummary astate summary = join astate summary     (** Updates a current summary with abstract state *)
 end 
+
+(** Add lock scores, and take the newer accessPath as well as the newer loc *)
+let combineLocks (lockA : lockInfo) (lockB : lockInfo) = {lockName = lockB.lockName; lockScore = (lockA.lockScore + lockB.lockScore); 
+                                                           loc = lockB.loc; accessPath = lockB.accessPath} 
+
+(** check if the lock is a part of abstract state, if it is combine it with the one from summary, if not add it to the astate *)
+(** Add check, if any problems have been resolved *)
+let addLockFromSummary (lock : lockInfo) (astate : t) = if lockSetMember lock astate then 
+                                                            let foundLock    = LockSet.find lock astate.post        in
+                                                            let combinedLock = combineLocks foundLock lock          in 
+                                                            let removedSet   = LockSet.remove lock astate.post      in
+                                                            let newPost      = LockSet.add combinedLock removedSet  in
+                                                            {problems = astate.problems; post = newPost}
+                                                        else 
+                                                            let newPost      = LockSet.add lock astate.post         in 
+                                                            {problems = astate.problems; post = newPost} 
+                        
+
+
+let rec addElements list astate = if not (List.length list <> 0) then astate
+                                   else 
+                                       let firstElement = List.hd list                                   in
+                                       let newAstate    = addLockFromSummary firstElement astate         in 
+                                       let newList      = List.tl list                                   in 
+                                       addElements newList newAstate 
+
+let set2list set = LockSet.elements set 
+
+(** Add scores of locks + maybe join problems, maybe problems will need to be joined manualy as well *)
+let applySummary astate summary = if ProblemSet.is_empty summary.problems && LockSet.is_empty summary.post then astate
+                                  else 
+                                      let newProblemSet = ProblemSet.union astate.problems summary.problems in
+                                      let summaryList   = set2list summary.post                             in
+                                      let newAstate     = addElements summaryList astate                    in 
+                                      {problems = newProblemSet; post = newAstate.post}
+
+
+                                   
+                              
 
 type summary = t

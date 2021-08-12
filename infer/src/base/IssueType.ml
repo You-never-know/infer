@@ -93,7 +93,7 @@ module Unsafe : sig
   module IssueSet : PrettyPrintable.PPUniqRankSet with type elt = t
 end = struct
   module T = struct
-    type t =
+    type t =         
       { unique_id: string
       ; checker: Checker.t
       ; visibility: visibility
