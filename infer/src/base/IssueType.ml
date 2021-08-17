@@ -1037,6 +1037,11 @@ let read_copy_update_violation: t =
   ~hum: "ReadCopyUpdate Violation"
   ~user_documentation: "TBD"
 
+let rcu_synchronization_problem : t = 
+  register ~id:"ReadCopyUpdate_Synchronization_Error" ~enabled:true Error ReadCopyUpdateViolation
+  ~hum: "Read Copy Update Synchronization Violation"
+  ~user_documentation: "TBD" 
+
 (* register enabled cost issues *)
 let is_autoreleasepool_size_issue =
   let autoreleasepool_size_issues = ref IssueSet.empty in

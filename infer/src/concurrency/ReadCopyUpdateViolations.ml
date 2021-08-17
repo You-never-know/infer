@@ -36,7 +36,7 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
           (* RCU lock - multiple flavours *)
           | RCULock (_locks: HilExp.t list) -> 
                 (* Domain.rcu_lock astate *)
-                let lock      = Domain.createLock (Procname.to_string calleeProc) 1 path loc                      in
+                let lock = Domain.createLock (Procname.to_string calleeProc) 1 path loc                           in
                 if Domain.lockSetMember lock astate then Domain.increaseLockScore lock astate
                 else Domain.addLock lock astate                                                                    
           (* RCU unlock - multiple flavours *)
@@ -44,12 +44,21 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
                 let lockName  = Domain.unlock2lock (Procname.to_string calleeProc)                                in 
                 let lock      = Domain.createLock lockName (-1) path loc                                          in 
                 if Domain.lockSetMember lock astate then Domain.decreaseLockScore lock astate     
-                else Domain.addLock lock astate                                                
+                else Domain.addLock lock astate 
+          (** Other function calls *)                                               
           | _ -> (** find functions (rcu_dereference and synchronize_rcu and check if there is not a problem) *)
             (** Other function call *)
                 let functionName = Procname.to_string calleeProc in
-                if String.equal "rcu_dereference" functionName then astate 
-                else if String.equal "synchronize_rcu" functionName then astate 
+                if String.equal "rcu_dereference" functionName then 
+                       astate 
+                (** Make for each rcu flavour, reason -> less false positives (synchronization inside a different rcu flavour -> seems rare) 
+                                                      -> may generate warning -> rcu flavours mismatch *)
+                else if String.equal "urcu_memb_synchronize_rcu" functionName then 
+                        match 
+                          Domain.findProblemLock astate 
+                        with 
+                          | Some (lock) -> Domain.addSynchronizationProblem ~problemLock:lock ~procName:(Procname.to_string calleeProc) ~loc:loc astate 
+                          | None -> astate
                 (** Any other function call, we may have a summary for this funtion alredy *)
                 else  
                     match 
@@ -79,41 +88,23 @@ module CFG = ProcCfg.Normal
 module Analyzer = LowerHil.MakeAbstractInterpreter (TransferFunctions (CFG))
 
 
-(**
-Plan
-
-3. rework the report function to be called just at the end, where it will report all the issues 
-
-
-Maybe: create summary (Actual state + problems found)
-
-!!!!!!!!!!!!!!!!!!!! Idea !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-Summary holds the problems that cannot be fixed, at the end a final summary is created with all the problems from abstract state, and this summary is forwarded into a print function that prints all the problems 
-*)
-
 (** Report an error when we have acquired more resources than we have released *)
-let report_if_violated {InterproceduralAnalysis.proc_desc; err_log; _} post =
-  let result = true in
+let _report_if_violated {InterproceduralAnalysis.proc_desc; err_log; _} post =
+  (*let result = ReadCopyUpdateDomain.hasViolation post in *)
+  let result = true in 
   if result then
-    let last_loc = Procdesc.Node.get_loc (Procdesc.get_exit_node proc_desc)                                  in
-    let message = F.asprintf "RCU locks locked at the end of the procedure: %a" ReadCopyUpdateDomain.pp post in
-    Reporting.log_issue proc_desc err_log ~loc:last_loc ReadCopyUpdateViolation
+    let loc = Procdesc.Node.get_loc (Procdesc.get_exit_node proc_desc)                   in
+    let message = F.asprintf "Read Copy Update problem: %a" ReadCopyUpdateDomain.pp post in
+    Reporting.log_issue proc_desc err_log ~loc:loc ReadCopyUpdateViolation
       IssueType.read_copy_update_violation message
 
 (** Main function into the checker--registered in RegisterCheckers *)
 let checker (analysisData : ReadCopyUpdateDomain.summary InterproceduralAnalysis.t) :
-    ReadCopyUpdateDomain.summary option =
+    ReadCopyUpdateDomain.summary option = 
       let init = ReadCopyUpdateDomain.initial in 
       match Analyzer.compute_post analysisData ~initial:init analysisData.proc_desc with 
       (** An abstract state has been created, make summary *)
       | Some (procedureAstate : ReadCopyUpdateDomain.t) ->
-         report_if_violated analysisData procedureAstate ;Some (ReadCopyUpdateDomain.Summary.updateSummary procedureAstate ReadCopyUpdateDomain.initial )
+         ReadCopyUpdateDomain.printProblems analysisData procedureAstate ;Some (ReadCopyUpdateDomain.Summary.updateSummary procedureAstate ReadCopyUpdateDomain.initial )
       | None -> 
-        L.die InternalError "The detection of read copy update violations failed to compute a post for '%a'." Procname.pp (Procdesc.get_proc_name analysisData.proc_desc)
-          
-      
-      
-      
-      (* let procedureAstate = Analyzer.compute_post analysisData ~initial:ReadCopyUpdateDomain.initial analysisData.proc_desc in
-      Option.iter result ~f:(fun post -> report_if_violated analysisData post) ;
-      result *)
+         L.die InternalError "The detection of read copy update violations failed to compute a post for '%a'." Procname.pp (Procdesc.get_proc_name analysisData.proc_desc)

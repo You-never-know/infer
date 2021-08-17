@@ -374,4 +374,6 @@ val is_autoreleasepool_size_issue : t -> bool
 
 val read_copy_update_violation: t
 
+val rcu_synchronization_problem : t
+
 module Map : PrettyPrintable.PPMap with type key = t

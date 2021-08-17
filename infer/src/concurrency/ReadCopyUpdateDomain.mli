@@ -30,6 +30,7 @@ type problem =
             issue           : IssueType.t (** Type of the issue *)
 }
 
+
 module Summary : sig
 
       val updateSummary        : t -> t -> t   (** Updates a current summary with abstract state *)
@@ -49,6 +50,12 @@ val increaseLockScore          : lockInfo  -> t -> t
 val decreaseLockScore          : lockInfo  -> t -> t
 
 val applySummary               : t -> t -> t
+
+val findProblemLock            : t -> lockInfo option
+
+val printProblems              : t InterproceduralAnalysis.t -> t -> unit
+
+val addSynchronizationProblem  : problemLock:lockInfo -> procName:string -> loc:Location.t -> t -> t 
 
 val hasViolation               : t -> bool 
 
