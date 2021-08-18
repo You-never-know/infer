@@ -44,28 +44,30 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
                 let lockName  = Domain.unlock2lock (Procname.to_string calleeProc)                                in 
                 let lock      = Domain.createLock lockName (-1) path loc                                          in 
                 if Domain.lockSetMember lock astate then Domain.decreaseLockScore lock astate     
-                else Domain.addLock lock astate 
+                else Domain.addLock lock astate
+          (** More locks should be maybe detected *) 
           (** Other function calls *)                                               
           | _ -> (** find functions (rcu_dereference and synchronize_rcu and check if there is not a problem) *)
             (** Other function call *)
                 let functionName = Procname.to_string calleeProc in
+                (** it is used even inside the reader -> detection of spin lock needed/ maybe more locks *)
                 if String.equal "rcu_dereference" functionName then 
                        astate 
                 (** Make for each rcu flavour, reason -> less false positives (synchronization inside a different rcu flavour -> seems rare) 
                                                       -> may generate warning -> rcu flavours mismatch *)
-                else if String.equal "urcu_memb_synchronize_rcu" functionName then 
-                        match 
-                          Domain.findProblemLock astate 
-                        with 
-                          | Some (lock) -> Domain.addSynchronizationProblem ~problemLock:lock ~procName:(Procname.to_string calleeProc) ~loc:loc astate 
-                          | None -> astate
+                else if Domain.isSynchronize functionName then 
+                    match 
+                      Domain.findProblemLock astate 
+                    with 
+                      | Some (lock) -> Domain.addSynchronizationProblem ~problemLock:lock ~procName:(Procname.to_string calleeProc) ~loc:loc astate 
+                      | None        -> astate
                 (** Any other function call, we may have a summary for this funtion alredy *)
                 else  
                     match 
                       analyze_dependency calleeProc 
                     with
                       | Some (_callee_proc_desc, callee_summary) -> Domain.applySummary astate callee_summary
-                      | None -> astate
+                      | None                                     -> astate
                 ) 
     | Assign (_lhs_access_path, _rhs_exp, _loc) ->
         (* an assignment [lhs_access_path] := [rhs_exp] *)
@@ -89,9 +91,9 @@ module Analyzer = LowerHil.MakeAbstractInterpreter (TransferFunctions (CFG))
 
 
 (** Report an error when we have acquired more resources than we have released *)
-let _report_if_violated {InterproceduralAnalysis.proc_desc; err_log; _} post =
+let _report_problems {InterproceduralAnalysis.proc_desc; err_log; _} post =
   (*let result = ReadCopyUpdateDomain.hasViolation post in *)
-  let result = true in 
+  let result = ReadCopyUpdateDomain.hasViolation post in 
   if result then
     let loc = Procdesc.Node.get_loc (Procdesc.get_exit_node proc_desc)                   in
     let message = F.asprintf "Read Copy Update problem: %a" ReadCopyUpdateDomain.pp post in
@@ -102,9 +104,9 @@ let _report_if_violated {InterproceduralAnalysis.proc_desc; err_log; _} post =
 let checker (analysisData : ReadCopyUpdateDomain.summary InterproceduralAnalysis.t) :
     ReadCopyUpdateDomain.summary option = 
       let init = ReadCopyUpdateDomain.initial in 
-      match Analyzer.compute_post analysisData ~initial:init analysisData.proc_desc with 
+      match  (L.progress "Start %a \n" String.pp (Procname.to_string (Procdesc.get_proc_name analysisData.proc_desc));Analyzer.compute_post analysisData ~initial:init analysisData.proc_desc) with 
       (** An abstract state has been created, make summary *)
       | Some (procedureAstate : ReadCopyUpdateDomain.t) ->
-         ReadCopyUpdateDomain.printProblems analysisData procedureAstate ;Some (ReadCopyUpdateDomain.Summary.updateSummary procedureAstate ReadCopyUpdateDomain.initial )
+         (L.progress "End %a \n" String.pp (Procname.to_string (Procdesc.get_proc_name analysisData.proc_desc));ReadCopyUpdateDomain.printProblems analysisData procedureAstate ;Some (ReadCopyUpdateDomain.Summary.updateSummary procedureAstate ReadCopyUpdateDomain.initial ))
       | None -> 
          L.die InternalError "The detection of read copy update violations failed to compute a post for '%a'." Procname.pp (Procdesc.get_proc_name analysisData.proc_desc)

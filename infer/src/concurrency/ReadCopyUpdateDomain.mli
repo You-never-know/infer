@@ -57,6 +57,10 @@ val printProblems              : t InterproceduralAnalysis.t -> t -> unit
 
 val addSynchronizationProblem  : problemLock:lockInfo -> procName:string -> loc:Location.t -> t -> t 
 
+val isSynchronize              : string -> bool
+
+val isDepracated               : string -> bool 
+
 val hasViolation               : t -> bool 
 
 val initial                    : t

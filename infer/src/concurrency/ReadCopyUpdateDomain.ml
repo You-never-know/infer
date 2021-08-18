@@ -154,6 +154,7 @@ let decreaseLockScore lock astate = let currentLock = LockSet.find lock astate.p
                                     let newPost     = LockSet.add newLock removedSet                                                                     in 
                                     {problems = astate.problems; post = newPost}      
 
+
 (** ProblemSet functions *)                               
 
 let checkIfLocked lock = if lock.lockScore > 0 then true
@@ -195,6 +196,39 @@ let report {InterproceduralAnalysis.proc_desc; err_log; _} problem =
        issue message
 
 let printProblems interprocedural post = ProblemSet.iter (report interprocedural) post.problems 
+
+
+(** RCU functions *)
+
+let isSynchronize functionName = if      String.equal functionName "urcu_memb_synchronize_rcu"   then true 
+                                 else if String.equal functionName "urcu_mb_synchronize_rcu"     then true 
+                                 else if String.equal functionName "urcu_bp_synchronize_rcu"     then true 
+                                 else if String.equal functionName "urcu_signal_synchronize_rcu" then true
+                                 else if String.equal functionName "urcu_qsbr_synchronize_rcu"   then true
+                                 else if String.equal functionName "synchronize_rcu"             then true
+                                 else if String.equal functionName "synchronize_net"             then true
+                                 else if String.equal functionName "synchronize_rcu_expedited"   then true
+                                 else if String.equal functionName "synchronize_srcu"            then true
+                                 else if String.equal functionName "synchronize_srcu_expedited"  then true
+                                 else if String.equal functionName "synchronize_rcu_tasks"       then true
+                                 else false 
+
+let isDepracated functionName = if      String.equal functionName "synchronize_rcu_bh"            then true 
+                                else if String.equal functionName "synchronize_rcu_bh_expedited"  then true 
+                                else if String.equal functionName "call_rcu_bh"                   then true 
+                                else if String.equal functionName "rcu_barrier_bh"                then true
+                                else if String.equal functionName "synchronize_sched"             then true
+                                else if String.equal functionName "synchronize_sched_expedited"   then true
+                                else if String.equal functionName "call_rcu_sched"                then true
+                                else if String.equal functionName "rcu_barrier_sched"             then true
+                                else if String.equal functionName "get_state_synchronize_sched"   then true
+                                else if String.equal functionName "cond_synchronize_sched"        then true
+                                else if String.equal functionName "synchronize_rcu_mult"          then true
+                                else if String.equal functionName "rcu_access_index"              then true
+                                else if String.equal functionName "rcu_dereference_index_check"   then true
+                                else if String.equal functionName "rcu_lockdep_assert"            then true
+                                else if String.equal functionName "hlist_add_after_rcu"           then true
+                                else false 
 
 
 (** Operands *)
