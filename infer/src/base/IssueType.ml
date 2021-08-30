@@ -1042,6 +1042,17 @@ let rcu_synchronization_problem : t =
   ~hum: "Read Copy Update Synchronization Violation"
   ~user_documentation: "TBD" 
 
+let rcu_deprecated_problem : t = 
+  register ~id:"ReadCopyUpdate_Deprecated_Error" ~enabled:true Warning ReadCopyUpdateViolation
+  ~hum: "Read Copy Update Deprecated Violation"
+  ~user_documentation: "TBD" 
+
+let rcu_flavour_problem : t = 
+  register ~id:"ReadCopyUpdate_Flavour_Mismatch_Error" ~enabled:true Warning ReadCopyUpdateViolation
+  ~hum: "Read Copy Update Potencail Flavour Mismatch"
+  ~user_documentation: "TBD" 
+
+
 (* register enabled cost issues *)
 let is_autoreleasepool_size_issue =
   let autoreleasepool_size_issues = ref IssueSet.empty in

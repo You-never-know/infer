@@ -21,24 +21,27 @@ module List = Caml.List
 (*********************************************************** *)
 
 type lockInfo = 
-{             lockName    : string;         (** name of the lock *)
-      mutable lockScore   : int;            (** score of the lock ("2" locked 2 times|"-2" twice unlocked *)
-              accessPath  : AccessPath.base;(** access path of the lock *)
-              loc         : Location.t      (** line of code where the lock was locked *)
+{             lockName     : string;         (** name of the lock *)
+      mutable lockScoreMin : int;            (** score of the lock - start of the interval *)
+      mutable lockScoreMax : int;            (** score of the lock - end of the interval *)
+              accessPath   : AccessPath.base;(** access path of the lock *)
+              loc          : Location.t      (** line of code where the lock was locked *)
 }
 
 module LockSet = Set.Make(struct
         type t = lockInfo
-
         let compare a b = String.compare a.lockName b.lockName 
 end)
 
-let lockSetPrint fmt lock = F.fprintf fmt "Lock %a on %a has score: %a" String.pp lock.lockName Location.pp lock.loc Int.pp lock.lockScore
+let lockSetPrint fmt lock = F.fprintf fmt "Lock %a on %a has score: <%a,%a>" String.pp lock.lockName Location.pp lock.loc 
+                                                                             Int.pp lock.lockScoreMin Int.pp lock.lockScoreMax
 
 
 type problem = 
 {
-            lockNeeded      : bool;       (** In a case of rcu_dereference, when no lock has been used yet, or multiple locks are used and not one is locked, if true -> false this probme is removed *)
+            islockProblem   : bool;       (** Determines if a problem is related to some lock *)
+            lockNeeded      : bool;       (** In a case of rcu_dereference, when no lock has been used yet, 
+                                              or multiple locks are used and not one is locked, if true -> false this probme is removed *)
             problemLock     : lockInfo;   (** Info about a problematic lock, in a case of lock score going to 0, problem is removed *)
             procName        : string;     (** Name of the function where a problem was detected *)
             loc             : Location.t; (** Line of code, where the problem was detected *)
@@ -48,7 +51,6 @@ type problem =
 
 module ProblemSet = Set.Make(struct
         type t = problem
-
         let compare a b = Location.compare a.loc b.loc
 end)
 
@@ -76,34 +78,45 @@ let set2list set = LockSet.elements set
 
 let lockSetMember lock astate = LockSet.mem lock astate.post
 
-(** Choose the lock with the higher score *)
-let chooseLock (lockA : lockInfo) (lockB : lockInfo) = let newLockScore = max lockA.lockScore lockB.lockScore in 
-                                                       {lockName = lockB.lockName; lockScore = newLockScore; 
-                                                       loc = lockB.loc; accessPath = lockB.accessPath} 
+(** Combine locks -> take the lower min score and the higher max score *)
+let combineLocks (lockA : lockInfo) (lockB : lockInfo) = let newLockScoreMax = max lockA.lockScoreMax lockB.lockScoreMax in
+                                                         let newLockScoreMin = min lockA.lockScoreMin lockB.lockScoreMin in 
+                                                         {
+                                                          lockName = lockB.lockName; 
+                                                          lockScoreMin = newLockScoreMin;
+                                                          lockScoreMax = newLockScoreMax; 
+                                                          loc = lockB.loc; 
+                                                          accessPath = lockB.accessPath
+                                                         } 
 
 (** Add lock scores, and take the newer accessPath as well as the newer loc *)
-let combineLocks (lockA : lockInfo) (lockB : lockInfo) = {lockName = lockB.lockName; lockScore = (lockA.lockScore + lockB.lockScore); 
-                                                          loc = lockB.loc; accessPath = lockB.accessPath} 
+let addLockScores (lockA : lockInfo) (lockB : lockInfo) = let newLockScoreMax = lockA.lockScoreMax + lockB.lockScoreMax   in
+                                                          let newLockScoreMin = lockA.lockScoreMin + lockB.lockScoreMin   in
+                                                          {
+                                                           lockName = lockB.lockName; 
+                                                           lockScoreMin = newLockScoreMin;
+                                                           lockScoreMax = newLockScoreMax; 
+                                                           loc = lockB.loc; 
+                                                           accessPath = lockB.accessPath
+                                                          } 
 
 
 (** check if the lock is a part of abstract state, if it is combine it with the one from summary, if not add it to the astate *)
 let joinLockWithAstate (lock : lockInfo) (astate : t) = if lockSetMember lock astate then 
                                                              let foundLock    = LockSet.find lock astate.post        in
-                                                             let combinedLock = chooseLock foundLock lock            in 
+                                                             let combinedLock = combineLocks foundLock lock          in 
                                                              let removedSet   = LockSet.remove lock astate.post      in
                                                              let newPost      = LockSet.add combinedLock removedSet  in
                                                              {problems = astate.problems; post = newPost}
-                                                         else 
+                                                        else 
                                                              let newPost      = LockSet.add lock astate.post         in 
                                                              {problems = astate.problems; post = newPost} 
                         
 
-
-
 (** check if the lock is a part of abstract state, if it is combine it with the one from summary, if not add it to the astate *)
 let joinLockWithSummary (lock : lockInfo) (astate : t) = if lockSetMember lock astate then 
                                                              let foundLock    = LockSet.find lock astate.post        in
-                                                             let combinedLock = combineLocks foundLock lock          in 
+                                                             let combinedLock = addLockScores foundLock lock         in 
                                                              let removedSet   = LockSet.remove lock astate.post      in
                                                              let newPost      = LockSet.add combinedLock removedSet  in
                                                              {problems = astate.problems; post = newPost}
@@ -115,10 +128,10 @@ let joinLockWithSummary (lock : lockInfo) (astate : t) = if lockSetMember lock a
 (** Add the scores of locks in astate  *)
 let rec addElements list astate = if not (List.length list <> 0) then astate
                                   else 
-                                       let firstElement = List.hd list                                   in
-                                       let newAstate    = joinLockWithSummary firstElement astate        in 
-                                       let newList      = List.tl list                                   in 
-                                       addElements newList newAstate 
+                                      let firstElement = List.hd list                                   in
+                                      let newAstate    = joinLockWithSummary firstElement astate        in 
+                                      let newList      = List.tl list                                   in 
+                                      addElements newList newAstate 
 
 (** Chose a score of the final lock from the two given *)
 let rec joinElements list astate = if not (List.length list <> 0) then astate
@@ -132,7 +145,13 @@ let rec joinElements list astate = if not (List.length list <> 0) then astate
 
 (** LockSet functions *)
 
-let createLock lockName lockScore accessPath loc = {lockName = lockName; lockScore = lockScore; accessPath = accessPath; loc = loc} 
+let createLock lockName lockScoreMin lockScoreMax accessPath loc = {
+                                                                    lockName = lockName; 
+                                                                    lockScoreMin = lockScoreMin; 
+                                                                    lockScoreMax = lockScoreMax; 
+                                                                    accessPath = accessPath; 
+                                                                    loc = loc
+                                                                   } 
 
 let addLock lock astate = let newElement = lock                               in 
                           let newPost    = LockSet.add newElement astate.post in 
@@ -143,44 +162,48 @@ let unlock2lock lockName = if String.equal lockName "urcu_memb_read_unlock" then
                            else lockName
 
 let increaseLockScore lock astate = let currentLock = LockSet.find lock astate.post                                                                      in
-                                    let newLock     = createLock currentLock.lockName (currentLock.lockScore + 1) currentLock.accessPath currentLock.loc in
+                                    let newLock     = createLock currentLock.lockName (currentLock.lockScoreMin + 1) (currentLock.lockScoreMax + 1) 
+                                                                 currentLock.accessPath currentLock.loc                                                  in
                                     let removedSet  = LockSet.remove currentLock astate.post                                                             in 
                                     let newPost     = LockSet.add newLock removedSet                                                                     in 
                                     {problems = astate.problems; post = newPost} 
 
 let decreaseLockScore lock astate = let currentLock = LockSet.find lock astate.post                                                                      in
-                                    let newLock     = createLock currentLock.lockName (currentLock.lockScore - 1) currentLock.accessPath currentLock.loc in
+                                    let newLock     = createLock currentLock.lockName (currentLock.lockScoreMin - 1) (currentLock.lockScoreMax - 1)
+                                                                 currentLock.accessPath currentLock.loc                                                  in
                                     let removedSet  = LockSet.remove currentLock astate.post                                                             in 
                                     let newPost     = LockSet.add newLock removedSet                                                                     in 
                                     {problems = astate.problems; post = newPost}      
 
 
-(** ProblemSet functions *)                               
+(** ProblemSet functions *)      
 
-let checkIfLocked lock = if lock.lockScore > 0 then true
+(** Better to check for the top of the interval, because it is better to show a false positive than miss an error *)
+let checkIfLocked lock = if lock.lockScoreMax > 0 then true
                          else false
 
-let rec findLock list = if not (List.length list <> 0) then None 
-                        else 
-                            let firstElement = List.hd list                       in
-                            if checkIfLocked firstElement then Some firstElement
-                            else 
-                                let newList  = List.tl list                       in 
-                                findLock newList  
+let addProblem problem astate = let newProblemSet = ProblemSet.add problem astate.problems    in
+                                {problems = newProblemSet; post = astate.post} 
 
+let addDeprecatedWarning ~problemLock ~procName ~loc astate = 
+                let newProblem    = {islockProblem = false;
+                                     lockNeeded = false; 
+                                     problemLock = problemLock; 
+                                     procName = procName; 
+                                     loc = loc;
+                                     problemName = "Deprecated function call used"; 
+                                     issue = IssueType.rcu_deprecated_problem}                                  in                                           
+                addProblem newProblem astate
 
-let findProblemLock astate = let lockList = set2list astate.post in
-                             findLock lockList
-                             
-
-let addSynchronizationProblem ~problemLock ~procName ~loc astate = 
-                let newProblem    = {lockNeeded = false; problemLock = problemLock; 
-                                     procName = procName; loc = loc;
-                                     problemName = "Deadlock -> synchronization inside a critical section"; 
-                                     issue = IssueType.rcu_synchronization_problem}                             in                  
-                                                                                         
-                let newProblemSet = ProblemSet.add newProblem astate.problems                                   in
-                {problems = newProblemSet; post = astate.post} 
+let createProblem ~isLockProblem ~lockNeeded ~problemLock ~functionName ~loc ~problemDescription ~issue = {
+                                                                                                           islockProblem = isLockProblem;
+                                                                                                           lockNeeded = lockNeeded;
+                                                                                                           problemLock = problemLock;
+                                                                                                           procName = functionName;
+                                                                                                           problemName = problemDescription;
+                                                                                                           loc = loc;
+                                                                                                           issue = issue
+                                                                                                          } 
 
 
 (** Print functions *)
@@ -199,6 +222,42 @@ let printProblems interprocedural post = ProblemSet.iter (report interprocedural
 
 
 (** RCU functions *)
+let getFlavourLocks functionName accesPath loc = if      String.equal functionName "urcu_memb_synchronize_rcu"                      then 
+                                                            let lock = createLock "urcu_memb_read_lock" 0 0 accesPath loc           in 
+                                                            [lock]
+                                                 else if String.equal functionName "urcu_mb_synchronize_rcu"                        then 
+                                                            let lock = createLock "urcu_mb_read_lock" 0 0 accesPath loc             in 
+                                                            [lock] 
+                                                 else if String.equal functionName "urcu_bp_synchronize_rcu"                        then 
+                                                            let lock = createLock "urcu_bp_read_lock" 0 0 accesPath loc             in 
+                                                            [lock]  
+                                                 else if String.equal functionName "urcu_signal_synchronize_rcu"                    then
+                                                            let lock = createLock "urcu_signal_read_lock" 0 0 accesPath loc         in 
+                                                            [lock]
+                                                 else if String.equal functionName "urcu_qsbr_synchronize_rcu"                      then
+                                                            let lock = createLock "urcu_qsbr_read_lock" 0 0 accesPath loc           in 
+                                                            [lock]
+                                                 else if String.equal functionName "synchronize_rcu"                                ||
+                                                         String.equal functionName "synchronize_net"                                ||
+                                                         String.equal functionName "synchronize_rcu_expedited"                      then    
+                                                            let lock1 = createLock "rcu_read_lock" 0 0 accesPath loc                in 
+                                                            let lock2 = createLock "rcu_read_lock_bh" 0 0 accesPath loc             in
+                                                            let lock3 = createLock "local_bh_disable" 0 0 accesPath loc             in 
+                                                            let lock4 = createLock "rcu_read_lock_sched" 0 0 accesPath loc          in 
+                                                            let lock5 = createLock "rcu_read_lock_sched_notrace" 0 0 accesPath loc  in 
+                                                            let lock6 = createLock "preempt_disable" 0 0 accesPath loc              in
+                                                            let lock7 = createLock "local_irq_save" 0 0 accesPath loc               in
+                                                            [lock1; lock2; lock3; lock4; lock5; lock6; lock7]
+                                                 else if String.equal functionName "synchronize_srcu"                               ||
+                                                         String.equal functionName "synchronize_srcu_expedited"                     ||
+                                                         String.equal functionName "synchronize_rcu_tasks"                          then  
+                                                            let lock1 = createLock "srcu_read_lock" 0 0 accesPath loc               in 
+                                                            let lock2 = createLock "srcu_read_lock_notrace" 0 0 accesPath loc       in
+                                                            [lock1; lock2]
+                                                 else  
+                                                            let lock = createLock "no_lock" 0 0 accesPath loc                       in 
+                                                            [lock]
+
 
 let isSynchronize functionName = if      String.equal functionName "urcu_memb_synchronize_rcu"   then true 
                                  else if String.equal functionName "urcu_mb_synchronize_rcu"     then true 
@@ -212,7 +271,8 @@ let isSynchronize functionName = if      String.equal functionName "urcu_memb_sy
                                  else if String.equal functionName "synchronize_srcu_expedited"  then true
                                  else if String.equal functionName "synchronize_rcu_tasks"       then true
                                  else false 
-
+                                 
+(** change to return Some + problem or None *)
 let isDepracated functionName = if      String.equal functionName "synchronize_rcu_bh"            then true 
                                 else if String.equal functionName "synchronize_rcu_bh_expedited"  then true 
                                 else if String.equal functionName "call_rcu_bh"                   then true 
@@ -229,6 +289,49 @@ let isDepracated functionName = if      String.equal functionName "synchronize_r
                                 else if String.equal functionName "rcu_lockdep_assert"            then true
                                 else if String.equal functionName "hlist_add_after_rcu"           then true
                                 else false 
+
+let rec findLock list post = if not (List.length list <> 0)      then false 
+                             else 
+                                let firstElement = List.hd list                       in
+                                if LockSet.mem firstElement post then true 
+                                else 
+                                    let newList  = List.tl list                       in 
+                                    findLock newList post   
+
+
+let rec synchronizeProblem lockList = if not (List.length lockList <> 0) then None  
+                                      else 
+                                          let firstElement = List.hd lockList                       in
+                                          if checkIfLocked firstElement  then Some firstElement 
+                                          else 
+                                              let newList  = List.tl lockList                       in 
+                                              synchronizeProblem newList  
+
+
+let findProblem functionName accessPath loc astate = let lockList = getFlavourLocks functionName accessPath loc             in
+                                                     (** Critical section for the synchronize_rcu found *)
+                                                     if findLock lockList astate then 
+                                                         match synchronizeProblem lockList with
+                                                         | None -> None 
+                                                         | Some (lock) -> 
+                                                                let error = createProblem ~isLockProblem:false false lock
+                                                                            functionName loc 
+                                                                            "Deadlock -> synchronization inside 
+                                                                             a critical section"
+                                                                            IssueType.rcu_synchronization_problem           in 
+                                                                Some error     
+                                                     (** No critical section for the synchronize_rcu flavour found *)
+                                                     else 
+                                                         let randomLock = List.hd lockList                                  in
+                                                         let warning = createProblem ~isLockProblem:false false 
+                                                                       randomLock functionName loc 
+                                                                       "RCU flavour potencial mismatch - 
+                                                                        RCU flavour of synchronization primitive
+                                                                        does not match any detected critical section"
+                                                                       IssueType.rcu_flavour_problem                        in
+                                                         Some warning                  
+                                                     
+                                                   
 
 
 (** Operands *)

@@ -13,13 +13,13 @@
 open! IStd
 include AbstractDomain.S
 
-type lockInfo =   
-{             lockName    : string;     (** name of the lock *)
-      mutable lockScore   : int;            (** score of the lock ("2" locked 2 times|"-2" twice unlocked *)
-              accessPath  : AccessPath.base;(** access path of the lock *)
-              loc         : Location.t      (** line of code where the lock was locked *)
+type lockInfo = 
+{             lockName     : string;         (** name of the lock *)
+      mutable lockScoreMin : int;            (** score of the lock - start of the interval *)
+      mutable lockScoreMax : int;            (** score of the lock - end of the interval *)
+              accessPath   : AccessPath.base;(** access path of the lock *)
+              loc          : Location.t      (** line of code where the lock was locked *)
 }
-
 type problem = 
 {
             lockNeeded      : bool;       (** In a case of rcu_dereference, when no lock has been used yet, or multiple locks are used and not one is locked, if true -> false this probme is removed *)
@@ -37,7 +37,7 @@ module Summary : sig
 
 end
 
-val createLock                 : string -> int -> AccessPath.base -> Location.t -> lockInfo
+val createLock                 : string -> int -> int -> AccessPath.base -> Location.t -> lockInfo
 
 val addLock                    : lockInfo -> t -> t
 
@@ -51,13 +51,17 @@ val decreaseLockScore          : lockInfo  -> t -> t
 
 val applySummary               : t -> t -> t
 
-val findProblemLock            : t -> lockInfo option
+val findFlavourLock            : t -> lockInfo -> lockInfo option
+
+val checkIfLocked              : lockInfo -> bool 
 
 val printProblems              : t InterproceduralAnalysis.t -> t -> unit
 
 val addSynchronizationProblem  : problemLock:lockInfo -> procName:string -> loc:Location.t -> t -> t 
 
-val isSynchronize              : string -> bool
+val addDeprecatedWarning       : problemLock:lockInfo -> procName:string -> loc:Location.t -> t -> t 
+
+val isSynchronize              : string -> bool 
 
 val isDepracated               : string -> bool 
 

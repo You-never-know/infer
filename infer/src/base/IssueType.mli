@@ -376,4 +376,8 @@ val read_copy_update_violation: t
 
 val rcu_synchronization_problem : t
 
+val rcu_deprecated_problem : t
+
+val rcu_flavour_problem : t
+
 module Map : PrettyPrintable.PPMap with type key = t

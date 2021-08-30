@@ -36,19 +36,18 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
           (* RCU lock - multiple flavours *)
           | RCULock (_locks: HilExp.t list) -> 
                 (* Domain.rcu_lock astate *)
-                let lock = Domain.createLock (Procname.to_string calleeProc) 1 path loc                           in
+                let lock = Domain.createLock (Procname.to_string calleeProc) 1 1 path loc                         in
                 if Domain.lockSetMember lock astate then Domain.increaseLockScore lock astate
                 else Domain.addLock lock astate                                                                    
           (* RCU unlock - multiple flavours *)
           | RCUUnlock (_locks: HilExp.t list) -> 
                 let lockName  = Domain.unlock2lock (Procname.to_string calleeProc)                                in 
-                let lock      = Domain.createLock lockName (-1) path loc                                          in 
+                let lock      = Domain.createLock lockName (-1) (-1) path loc                                     in 
                 if Domain.lockSetMember lock astate then Domain.decreaseLockScore lock astate     
                 else Domain.addLock lock astate
-          (** More locks should be maybe detected *) 
-          (** Other function calls *)                                               
-          | _ -> (** find functions (rcu_dereference and synchronize_rcu and check if there is not a problem) *)
-            (** Other function call *)
+          (** Maybe more locks should be detected - spin lock at least *) 
+          (** Other function calls - find those that might be problematic *)                                               
+          | _ -> 
                 let functionName = Procname.to_string calleeProc in
                 (** it is used even inside the reader -> detection of spin lock needed/ maybe more locks *)
                 if String.equal "rcu_dereference" functionName then 
@@ -61,6 +60,10 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
                     with 
                       | Some (lock) -> Domain.addSynchronizationProblem ~problemLock:lock ~procName:(Procname.to_string calleeProc) ~loc:loc astate 
                       | None        -> astate
+                (** Use of a depracated function, generate a warning *)
+                else if Domain.isDepracated functionName then 
+                    let emptyLock = Domain.createLock "" 0 0 path loc                                                               in
+                    Domain.addDeprecatedProblem ~problemLock:emptyLock ~procName:(Procname.to_string calleeProc) ~loc:loc astate 
                 (** Any other function call, we may have a summary for this funtion alredy *)
                 else  
                     match 
