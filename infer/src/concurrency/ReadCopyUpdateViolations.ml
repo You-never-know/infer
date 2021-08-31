@@ -52,18 +52,18 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
                 (** it is used even inside the reader -> detection of spin lock needed/ maybe more locks *)
                 if String.equal "rcu_dereference" functionName then 
                        astate 
-                (** Make for each rcu flavour, reason -> less false positives (synchronization inside a different rcu flavour -> seems rare) 
-                                                      -> may generate warning -> rcu flavours mismatch *)
+                (** Generate an error if synchronize used inside a correct critical section
+                    Generate a warning if the flavour of synchronize does not correspond to the detected critical section *)
                 else if Domain.isSynchronize functionName then 
                     match 
-                      Domain.findProblemLock astate 
+                      L.progress "Computed post %a \n" String.pp functionName;Domain.findProblem functionName path loc astate 
                     with 
-                      | Some (lock) -> Domain.addSynchronizationProblem ~problemLock:lock ~procName:(Procname.to_string calleeProc) ~loc:loc astate 
-                      | None        -> astate
+                      | Some (problem) -> Domain.addProblem problem astate 
+                      | None           -> astate
                 (** Use of a depracated function, generate a warning *)
                 else if Domain.isDepracated functionName then 
                     let emptyLock = Domain.createLock "" 0 0 path loc                                                               in
-                    Domain.addDeprecatedProblem ~problemLock:emptyLock ~procName:(Procname.to_string calleeProc) ~loc:loc astate 
+                    Domain.addDeprecatedWarning ~problemLock:emptyLock ~procName:(Procname.to_string calleeProc) ~loc:loc astate 
                 (** Any other function call, we may have a summary for this funtion alredy *)
                 else  
                     match 

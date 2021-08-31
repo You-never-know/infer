@@ -74,6 +74,8 @@ let initial = {
 
 (** Set functions *)
 
+
+
 let set2list set = LockSet.elements set 
 
 let lockSetMember lock astate = LockSet.mem lock astate.post
@@ -158,8 +160,21 @@ let addLock lock astate = let newElement = lock                               in
                           {problems = astate.problems; post = newPost}
                                                   
 
-let unlock2lock lockName = if String.equal lockName "urcu_memb_read_unlock" then "urcu_memb_read_lock"
-                           else lockName
+let unlock2lock lockName = if      String.equal lockName "urcu_memb_read_unlock"          then "urcu_memb_read_lock"
+                           else if String.equal lockName "urcu_mb_read_unlock"            then "urcu_mb_read_lock"
+                           else if String.equal lockName "urcu_bp_read_unlock"            then "urcu_bp_read_lock"
+                           else if String.equal lockName "urcu_signal_read_unlock"        then "urcu_signal_read_lock"
+                           else if String.equal lockName "urcu_qsbr_read_unlock"          then "urcu_qsbr_read_lock"
+                           else if String.equal lockName "rcu_read_unlock"                then "rcu_read_lock"
+                           else if String.equal lockName "rcu_read_unlock_bh"             then "rcu_read_lock_bh"
+                           else if String.equal lockName "local_bh_enable"                then "local_bh_disable"
+                           else if String.equal lockName "rcu_read_unlock_sched"          then "rcu_read_lock_sched"
+                           else if String.equal lockName "rcu_read_unlock_sched_notrace"  then "rcu_read_unlock_sched_notrace"
+                           else if String.equal lockName "preempt_enable"                 then "preempt_disable"
+                           else if String.equal lockName "local_irq_restore"              then "local_irq_save"
+                           else if String.equal lockName "srcu_read_unlock"               then "srcu_read_lock"
+                           else if String.equal lockName "srcu_read_unlock_notrace"       then "srcu_read_lock_notrace"
+                           else    lockName
 
 let increaseLockScore lock astate = let currentLock = LockSet.find lock astate.post                                                                      in
                                     let newLock     = createLock currentLock.lockName (currentLock.lockScoreMin + 1) (currentLock.lockScoreMax + 1) 
@@ -176,7 +191,9 @@ let decreaseLockScore lock astate = let currentLock = LockSet.find lock astate.p
                                     {problems = astate.problems; post = newPost}      
 
 
-(** ProblemSet functions *)      
+(** ProblemSet functions *) 
+
+
 
 (** Better to check for the top of the interval, because it is better to show a false positive than miss an error *)
 let checkIfLocked lock = if lock.lockScoreMax > 0 then true
@@ -192,10 +209,10 @@ let addDeprecatedWarning ~problemLock ~procName ~loc astate =
                                      procName = procName; 
                                      loc = loc;
                                      problemName = "Deprecated function call used"; 
-                                     issue = IssueType.rcu_deprecated_problem}                                  in                                           
+                                     issue = IssueType.rcu_deprecated_problem}                in                                           
                 addProblem newProblem astate
 
-let createProblem ~isLockProblem ~lockNeeded ~problemLock ~functionName ~loc ~problemDescription ~issue = {
+let createProblem ~isLockProblem ~lockNeeded ~problemLock ~functionName ~loc problemDescription issue = {
                                                                                                            islockProblem = isLockProblem;
                                                                                                            lockNeeded = lockNeeded;
                                                                                                            problemLock = problemLock;
@@ -207,6 +224,8 @@ let createProblem ~isLockProblem ~lockNeeded ~problemLock ~functionName ~loc ~pr
 
 
 (** Print functions *)
+
+
 
 let problemSetPrint fmt problem = F.fprintf fmt "On %a is a problem: %a with function %a (%a)" Location.pp problem.loc 
                                   String.pp problem.problemName String.pp problem.procName IssueType.pp problem.issue
@@ -258,7 +277,6 @@ let getFlavourLocks functionName accesPath loc = if      String.equal functionNa
                                                             let lock = createLock "no_lock" 0 0 accesPath loc                       in 
                                                             [lock]
 
-
 let isSynchronize functionName = if      String.equal functionName "urcu_memb_synchronize_rcu"   then true 
                                  else if String.equal functionName "urcu_mb_synchronize_rcu"     then true 
                                  else if String.equal functionName "urcu_bp_synchronize_rcu"     then true 
@@ -272,7 +290,6 @@ let isSynchronize functionName = if      String.equal functionName "urcu_memb_sy
                                  else if String.equal functionName "synchronize_rcu_tasks"       then true
                                  else false 
                                  
-(** change to return Some + problem or None *)
 let isDepracated functionName = if      String.equal functionName "synchronize_rcu_bh"            then true 
                                 else if String.equal functionName "synchronize_rcu_bh_expedited"  then true 
                                 else if String.equal functionName "call_rcu_bh"                   then true 
@@ -290,6 +307,7 @@ let isDepracated functionName = if      String.equal functionName "synchronize_r
                                 else if String.equal functionName "hlist_add_after_rcu"           then true
                                 else false 
 
+
 let rec findLock list post = if not (List.length list <> 0)      then false 
                              else 
                                 let firstElement = List.hd list                       in
@@ -299,23 +317,38 @@ let rec findLock list post = if not (List.length list <> 0)      then false
                                     findLock newList post   
 
 
-let rec synchronizeProblem lockList = if not (List.length lockList <> 0) then None  
-                                      else 
-                                          let firstElement = List.hd lockList                       in
-                                          if checkIfLocked firstElement  then Some firstElement 
-                                          else 
-                                              let newList  = List.tl lockList                       in 
-                                              synchronizeProblem newList  
+let rec lockListMem element list = if not (List.length list <> 0) then false
+                                   else 
+                                       let firstElement = List.hd list                                          in
+                                       if String.equal element.lockName firstElement.lockName then true
+                                       else 
+                                           let newList  = List.tl list                                          in 
+                                           lockListMem element newList 
+
+
+let rec synchronizeProblem lockList postList = if not (List.length postList <> 0) then None  
+                                               else 
+                                                   let firstElement = List.hd postList                                                       in
+                                                   if lockListMem firstElement lockList then 
+                                                        if checkIfLocked firstElement then Some firstElement 
+                                                        else 
+                                                        let newList  = List.tl postList                                                       in 
+                                                       synchronizeProblem lockList newList 
+                                                   else 
+                                                       let newList  = List.tl postList                                                       in 
+                                                       synchronizeProblem lockList newList  
+                                                
 
 
 let findProblem functionName accessPath loc astate = let lockList = getFlavourLocks functionName accessPath loc             in
                                                      (** Critical section for the synchronize_rcu found *)
-                                                     if findLock lockList astate then 
-                                                         match synchronizeProblem lockList with
+                                                     if findLock lockList astate.post then 
+                                                         let postList = set2list astate.post                                in
+                                                         match synchronizeProblem lockList postList with
                                                          | None -> None 
                                                          | Some (lock) -> 
-                                                                let error = createProblem ~isLockProblem:false false lock
-                                                                            functionName loc 
+                                                                let error = createProblem ~isLockProblem:false ~lockNeeded:false ~problemLock:lock
+                                                                            ~functionName:functionName ~loc:loc 
                                                                             "Deadlock -> synchronization inside 
                                                                              a critical section"
                                                                             IssueType.rcu_synchronization_problem           in 
@@ -323,8 +356,9 @@ let findProblem functionName accessPath loc astate = let lockList = getFlavourLo
                                                      (** No critical section for the synchronize_rcu flavour found *)
                                                      else 
                                                          let randomLock = List.hd lockList                                  in
-                                                         let warning = createProblem ~isLockProblem:false false 
-                                                                       randomLock functionName loc 
+                                                         let warning = createProblem ~isLockProblem:false ~lockNeeded:false 
+                                                                       ~problemLock:randomLock ~functionName:functionName 
+                                                                       ~loc:loc 
                                                                        "RCU flavour potencial mismatch - 
                                                                         RCU flavour of synchronization primitive
                                                                         does not match any detected critical section"

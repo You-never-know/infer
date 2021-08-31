@@ -20,14 +20,17 @@ type lockInfo =
               accessPath   : AccessPath.base;(** access path of the lock *)
               loc          : Location.t      (** line of code where the lock was locked *)
 }
+
 type problem = 
 {
-            lockNeeded      : bool;       (** In a case of rcu_dereference, when no lock has been used yet, or multiple locks are used and not one is locked, if true -> false this probme is removed *)
+            islockProblem   : bool;       (** Determines if a problem is related to some lock *)
+            lockNeeded      : bool;       (** In a case of rcu_dereference, when no lock has been used yet, 
+                                              or multiple locks are used and not one is locked, if true -> false this probme is removed *)
             problemLock     : lockInfo;   (** Info about a problematic lock, in a case of lock score going to 0, problem is removed *)
             procName        : string;     (** Name of the function where a problem was detected *)
             loc             : Location.t; (** Line of code, where the problem was detected *)
             problemName     : string;     (** Info about the problem *)
-            issue           : IssueType.t (** Type of the issue *)
+            issue           : IssueType.t (** Type of the issue used for identifing *)
 }
 
 
@@ -51,13 +54,13 @@ val decreaseLockScore          : lockInfo  -> t -> t
 
 val applySummary               : t -> t -> t
 
-val findFlavourLock            : t -> lockInfo -> lockInfo option
+val findProblem                : string ->  AccessPath.base -> Location.t -> t -> problem option
 
 val checkIfLocked              : lockInfo -> bool 
 
 val printProblems              : t InterproceduralAnalysis.t -> t -> unit
 
-val addSynchronizationProblem  : problemLock:lockInfo -> procName:string -> loc:Location.t -> t -> t 
+val addProblem                 : problem -> t -> t 
 
 val addDeprecatedWarning       : problemLock:lockInfo -> procName:string -> loc:Location.t -> t -> t 
 
