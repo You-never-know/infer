@@ -13,3 +13,6 @@ open! IStd
 
 val checker :
   ReadCopyUpdateDomain.summary InterproceduralAnalysis.t -> ReadCopyUpdateDomain.summary option
+
+val printProblems : 
+  ReadCopyUpdateDomain.summary InterproceduralAnalysis.file_t -> IssueLog.t 

@@ -205,8 +205,11 @@ let all_checkers =
         (let checker =
            interprocedural Payloads.Fields.read_copy_update
              ReadCopyUpdateViolations.checker
+         and checkerFile =
+            file Temporary Payloads.Fields.read_copy_update
+             ReadCopyUpdateViolations.printProblems 
          in
-         [(checker, Clang)] ) } ]
+         [(checker, Clang); (checkerFile, Clang)] ) } ]
 
 
 let get_active_checkers () =

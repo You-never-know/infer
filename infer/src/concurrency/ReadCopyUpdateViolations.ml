@@ -56,7 +56,7 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
                     Generate a warning if the flavour of synchronize does not correspond to the detected critical section *)
                 else if Domain.isSynchronize functionName then 
                     match 
-                      L.progress "Computed post %a \n" String.pp functionName;Domain.findProblem functionName path loc astate 
+                      Domain.findProblem functionName path loc astate 
                     with 
                       | Some (problem) -> Domain.addProblem problem astate 
                       | None           -> astate
@@ -92,24 +92,25 @@ module CFG = ProcCfg.Normal
 (* Create an intraprocedural abstract interpreter from the transfer functions defined earlier*)
 module Analyzer = LowerHil.MakeAbstractInterpreter (TransferFunctions (CFG))
 
+let printFunction functionName = L.progress "I was called with %a \n" Procname.pp functionName
 
-(** Report an error when we have acquired more resources than we have released *)
-let _report_problems {InterproceduralAnalysis.proc_desc; err_log; _} post =
-  (*let result = ReadCopyUpdateDomain.hasViolation post in *)
-  let result = ReadCopyUpdateDomain.hasViolation post in 
-  if result then
-    let loc = Procdesc.Node.get_loc (Procdesc.get_exit_node proc_desc)                   in
-    let message = F.asprintf "Read Copy Update problem: %a" ReadCopyUpdateDomain.pp post in
-    Reporting.log_issue proc_desc err_log ~loc:loc ReadCopyUpdateViolation
-      IssueType.read_copy_update_violation message
+let printList list = Caml.List.iter printFunction list
+
+let printProblems (analysisData : ReadCopyUpdateDomain.summary InterproceduralAnalysis.file_t) :
+    IssueLog.t = printList analysisData.procedures; IssueLog.empty
+
+(** 
+L.progress "Start %a \n" String.pp (Procname.to_string (Procdesc.get_proc_name analysisData.proc_desc)) 
+(L.progress "End %a \n" String.pp (Procname.to_string (Procdesc.get_proc_name analysisData.proc_desc));
+*)
 
 (** Main function into the checker--registered in RegisterCheckers *)
 let checker (analysisData : ReadCopyUpdateDomain.summary InterproceduralAnalysis.t) :
     ReadCopyUpdateDomain.summary option = 
       let init = ReadCopyUpdateDomain.initial in 
-      match  (L.progress "Start %a \n" String.pp (Procname.to_string (Procdesc.get_proc_name analysisData.proc_desc));Analyzer.compute_post analysisData ~initial:init analysisData.proc_desc) with 
+      match Analyzer.compute_post analysisData ~initial:init analysisData.proc_desc with 
       (** An abstract state has been created, make summary *)
       | Some (procedureAstate : ReadCopyUpdateDomain.t) ->
-         (L.progress "End %a \n" String.pp (Procname.to_string (Procdesc.get_proc_name analysisData.proc_desc));ReadCopyUpdateDomain.printProblems analysisData procedureAstate ;Some (ReadCopyUpdateDomain.Summary.updateSummary procedureAstate ReadCopyUpdateDomain.initial ))
+         ReadCopyUpdateDomain.printProblems analysisData procedureAstate ;Some (ReadCopyUpdateDomain.Summary.updateSummary procedureAstate ReadCopyUpdateDomain.initial )
       | None -> 
          L.die InternalError "The detection of read copy update violations failed to compute a post for '%a'." Procname.pp (Procdesc.get_proc_name analysisData.proc_desc)

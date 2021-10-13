@@ -135,10 +135,13 @@ end = struct
     , mk_model_matcher ~f:(fun mdl -> mdl.unlock)
     , mk_model_matcher ~f:(fun mdl -> mdl.trylock)
     , mk_matcher ["std::lock"]
-    , mk_matcher ["urcu_memb_read_lock"]
-    , mk_matcher ["urcu_memb_read_unlock"] )
-
-
+    , mk_matcher ["urcu_memb_read_lock"; "urcu_mb_read_lock"; "urcu_bp_read_lock"; "urcu_signal_read_lock";  "urcu_qsbr_read_lock"; 
+                  "rcu_read_lock"; "rcu_read_lock_bh"; "rcu_read_lock_sched"; "local_bh_disable"; "rcu_read_lock_sched_notrace"; 
+                  "preempt_disable"; "local_irq_save"; "srcu_read_lock";"srcu_read_lock_notrace"]
+    , mk_matcher ["urcu_memb_read_unlock"; "urcu_mb_read_unlock"; "urcu_bp_read_unlock"; "urcu_signal_read_unlock";  
+                  "urcu_qsbr_read_unlock"; "rcu_read_unlock";  "rcu_read_unlock_bh"; "rcu_read_unlock_sched"; "local_bh_enable"; 
+                  "rcu_read_unlock_sched_notrace"; "preempt_enable"; "local_irq_restore"; "srcu_read_unlock"; "srcu_read_unlock_notrace"  ] )
+                         
   (** C++ guard classes used for scope-based lock management. NB we pretend all classes below
       implement the mutex interface even though only [shared_lock] and [unique_lock] do, for
       simplicity. The comments summarise which methods are implemented. *)

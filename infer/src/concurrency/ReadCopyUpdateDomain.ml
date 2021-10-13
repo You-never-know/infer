@@ -54,9 +54,17 @@ module ProblemSet = Set.Make(struct
         let compare a b = Location.compare a.loc b.loc
 end)
 
+
+module FunctionSet = Set.Make(struct
+    type t = string  
+    let compare a b = String.compare a b
+end)
+
+
 type astate = { (** abstract state *)
-        problems: ProblemSet.t; (** Problems encountered *)
-        post    : LockSet.t     (** State after the function *)
+        problems    : ProblemSet.t;  (** Problems encountered *)
+        post        : LockSet.t;     (** State after the function *)
+        functionCals : FunctionSet.t (** Set of all the functions called in the procedure *)
 }
 
 type t = astate
@@ -66,8 +74,19 @@ type t = astate
 
 let initial = {
         problems = ProblemSet.empty;
-        post     = LockSet.empty
+        post     = LockSet.empty;
+        functionCals = FunctionSet.empty;
 }
+
+(** Top-level function track *)
+(*********************************************************** *)
+
+let topLevelFunctionsInit           = FunctionSet.empty
+
+let addTopLevelFunction name set    = FunctionSet.add name set
+
+let removeTopLevelFunction name set = FunctionSet.remove name set
+
 
 (** Abstract state functions *)
 (*********************************************************** *)
@@ -103,16 +122,16 @@ let addLockScores (lockA : lockInfo) (lockB : lockInfo) = let newLockScoreMax = 
                                                           } 
 
 
-(** check if the lock is a part of abstract state, if it is combine it with the one from summary, if not add it to the astate *)
+(** check if the lock is a part of abstract state, if it is combine it with the one from other abstract state, if not add it to the astate *)
 let joinLockWithAstate (lock : lockInfo) (astate : t) = if lockSetMember lock astate then 
                                                              let foundLock    = LockSet.find lock astate.post        in
                                                              let combinedLock = combineLocks foundLock lock          in 
                                                              let removedSet   = LockSet.remove lock astate.post      in
                                                              let newPost      = LockSet.add combinedLock removedSet  in
-                                                             {problems = astate.problems; post = newPost}
+                                                             {problems = astate.problems; post = newPost; functionCals = astate.functionCals}
                                                         else 
                                                              let newPost      = LockSet.add lock astate.post         in 
-                                                             {problems = astate.problems; post = newPost} 
+                                                             {problems = astate.problems; post = newPost; functionCals = astate.functionCals} 
                         
 
 (** check if the lock is a part of abstract state, if it is combine it with the one from summary, if not add it to the astate *)
@@ -121,10 +140,10 @@ let joinLockWithSummary (lock : lockInfo) (astate : t) = if lockSetMember lock a
                                                              let combinedLock = addLockScores foundLock lock         in 
                                                              let removedSet   = LockSet.remove lock astate.post      in
                                                              let newPost      = LockSet.add combinedLock removedSet  in
-                                                             {problems = astate.problems; post = newPost}
+                                                             {problems = astate.problems; post = newPost; functionCals = astate.functionCals}
                                                          else 
                                                              let newPost      = LockSet.add lock astate.post         in 
-                                                             {problems = astate.problems; post = newPost} 
+                                                             {problems = astate.problems; post = newPost; functionCals = astate.functionCals} 
                         
 
 (** Add the scores of locks in astate  *)
@@ -157,7 +176,7 @@ let createLock lockName lockScoreMin lockScoreMax accessPath loc = {
 
 let addLock lock astate = let newElement = lock                               in 
                           let newPost    = LockSet.add newElement astate.post in 
-                          {problems = astate.problems; post = newPost}
+                          {problems = astate.problems; post = newPost; functionCals = astate.functionCals}
                                                   
 
 let unlock2lock lockName = if      String.equal lockName "urcu_memb_read_unlock"          then "urcu_memb_read_lock"
@@ -181,14 +200,14 @@ let increaseLockScore lock astate = let currentLock = LockSet.find lock astate.p
                                                                  currentLock.accessPath currentLock.loc                                                  in
                                     let removedSet  = LockSet.remove currentLock astate.post                                                             in 
                                     let newPost     = LockSet.add newLock removedSet                                                                     in 
-                                    {problems = astate.problems; post = newPost} 
+                                    {problems = astate.problems; post = newPost; functionCals = astate.functionCals} 
 
 let decreaseLockScore lock astate = let currentLock = LockSet.find lock astate.post                                                                      in
                                     let newLock     = createLock currentLock.lockName (currentLock.lockScoreMin - 1) (currentLock.lockScoreMax - 1)
                                                                  currentLock.accessPath currentLock.loc                                                  in
                                     let removedSet  = LockSet.remove currentLock astate.post                                                             in 
                                     let newPost     = LockSet.add newLock removedSet                                                                     in 
-                                    {problems = astate.problems; post = newPost}      
+                                    {problems = astate.problems; post = newPost; functionCals = astate.functionCals}      
 
 
 (** ProblemSet functions *) 
@@ -200,7 +219,7 @@ let checkIfLocked lock = if lock.lockScoreMax > 0 then true
                          else false
 
 let addProblem problem astate = let newProblemSet = ProblemSet.add problem astate.problems    in
-                                {problems = newProblemSet; post = astate.post} 
+                                {problems = newProblemSet; post = astate.post; functionCals = astate.functionCals} 
 
 let addDeprecatedWarning ~problemLock ~procName ~loc astate = 
                 let newProblem    = {islockProblem = false;
@@ -213,14 +232,14 @@ let addDeprecatedWarning ~problemLock ~procName ~loc astate =
                 addProblem newProblem astate
 
 let createProblem ~isLockProblem ~lockNeeded ~problemLock ~functionName ~loc problemDescription issue = {
-                                                                                                           islockProblem = isLockProblem;
-                                                                                                           lockNeeded = lockNeeded;
-                                                                                                           problemLock = problemLock;
-                                                                                                           procName = functionName;
-                                                                                                           problemName = problemDescription;
-                                                                                                           loc = loc;
-                                                                                                           issue = issue
-                                                                                                          } 
+                                                                                                          islockProblem = isLockProblem;
+                                                                                                          lockNeeded = lockNeeded;
+                                                                                                          problemLock = problemLock;
+                                                                                                          procName = functionName;
+                                                                                                          problemName = problemDescription;
+                                                                                                          loc = loc;
+                                                                                                          issue = issue
+                                                                                                        } 
 
 
 (** Print functions *)
@@ -328,15 +347,15 @@ let rec lockListMem element list = if not (List.length list <> 0) then false
 
 let rec synchronizeProblem lockList postList = if not (List.length postList <> 0) then None  
                                                else 
-                                                   let firstElement = List.hd postList                                                       in
+                                                   let firstElement = List.hd postList                                      in
                                                    if lockListMem firstElement lockList then 
                                                         if checkIfLocked firstElement then Some firstElement 
                                                         else 
-                                                        let newList  = List.tl postList                                                       in 
-                                                       synchronizeProblem lockList newList 
+                                                        let newList  = List.tl postList                                     in 
+                                                        synchronizeProblem lockList newList 
                                                    else 
-                                                       let newList  = List.tl postList                                                       in 
-                                                       synchronizeProblem lockList newList  
+                                                        let newList  = List.tl postList                                     in 
+                                                        synchronizeProblem lockList newList  
                                                 
 
 
@@ -347,10 +366,10 @@ let findProblem functionName accessPath loc astate = let lockList = getFlavourLo
                                                          match synchronizeProblem lockList postList with
                                                          | None -> None 
                                                          | Some (lock) -> 
-                                                                let error = createProblem ~isLockProblem:false ~lockNeeded:false ~problemLock:lock
+                                                                let error = createProblem ~isLockProblem:false 
+                                                                            ~lockNeeded:false ~problemLock:lock
                                                                             ~functionName:functionName ~loc:loc 
-                                                                            "Deadlock -> synchronization inside 
-                                                                             a critical section"
+                                                                            "Deadlock -> synchronization inside a critical section"
                                                                             IssueType.rcu_synchronization_problem           in 
                                                                 Some error     
                                                      (** No critical section for the synchronize_rcu flavour found *)
@@ -374,10 +393,11 @@ let findProblem functionName accessPath loc astate = let lockList = getFlavourLo
 let leq ~lhs ~rhs = ProblemSet.subset lhs.problems rhs.problems && LockSet.subset lhs.post rhs.post  
 
 (** Unite sets *)
-let join astateA astateB = let newProblems = ProblemSet.union astateA.problems astateB.problems in
-                           let lockList    = set2list astateA.post                              in 
-                           let newAstate   = joinElements lockList astateB                      in
-                           {problems = newProblems; post = newAstate.post}
+let join astateA astateB = let newProblems     = ProblemSet.union astateA.problems astateB.problems          in
+                           let lockList        = set2list astateA.post                                       in 
+                           let newAstate       = joinElements lockList astateB                               in
+                           let newFunctionCals = FunctionSet.union astateA.functionCals astateB.functionCals in
+                           {problems = newProblems; post = newAstate.post; functionCals = newFunctionCals}
                 
 (** We join and join *)
 let widen ~prev ~next ~num_iters:_ = join prev next
@@ -406,7 +426,7 @@ let applySummary astate summary = if ProblemSet.is_empty summary.problems && Loc
                                       let newProblemSet = ProblemSet.union astate.problems summary.problems in
                                       let summaryList   = set2list summary.post                             in
                                       let newAstate     = addElements summaryList astate                    in 
-                                      {problems = newProblemSet; post = newAstate.post}
+                                      {problems = newProblemSet; post = newAstate.post; functionCals = astate.functionCals}
 
                                               
 

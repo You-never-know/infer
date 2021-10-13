@@ -40,6 +40,19 @@ module Summary : sig
 
 end
 
+module FunctionSet : sig
+
+      type t 
+      val compare              : t -> t -> int
+
+end
+
+val topLevelFunctionsInit      : FunctionSet.t
+
+val addTopLevelFunction        : string -> FunctionSet.t -> FunctionSet.t
+
+val removeTopLevelFunction     : string -> FunctionSet.t -> FunctionSet.t
+
 val createLock                 : string -> int -> int -> AccessPath.base -> Location.t -> lockInfo
 
 val addLock                    : lockInfo -> t -> t
