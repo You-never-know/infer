@@ -31,7 +31,7 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
         (* function call [return_opt] := invoke [callee_procname]([actuals]) *)
         (* L.progress "Computed post %a \n" Location.pp loc; *)
         match 
-          ConcurrencyModels.get_lock_effect calleeProc actuals
+          ConcurrencyModels.get_lock_effect calleeProc actuals 
         with 
           (* RCU lock - multiple flavours *)
           | RCULock (_locks: HilExp.t list) -> 
@@ -48,7 +48,7 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
           (** Maybe more locks should be detected - spin lock at least *) 
           (** Other function calls - find those that might be problematic *)                                               
           | _ -> 
-                let functionName = Procname.to_string calleeProc in
+                let functionName = Procname.to_string calleeProc                                                  in
                 (** it is used even inside the reader -> detection of spin lock needed/ maybe more locks *)
                 if String.equal "rcu_dereference" functionName then 
                        astate 
@@ -69,8 +69,9 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
                     match 
                       analyze_dependency calleeProc 
                     with
-                      | Some (_callee_proc_desc, callee_summary) -> Domain.applySummary astate callee_summary
-                      | None                                     -> astate
+                      | Some (_callee_proc_desc, callee_summary) -> let newAstate = Domain.addFunctionCall calleeProc astate in 
+                                                                    Domain.applySummary newAstate callee_summary
+                      | None                                     -> Domain.addFunctionCall calleeProc astate
                 ) 
     | Assign (_lhs_access_path, _rhs_exp, _loc) ->
         (* an assignment [lhs_access_path] := [rhs_exp] *)
@@ -87,17 +88,18 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
   let pp_session_name _node fmt = F.pp_print_string fmt "Read Copy Update Violation"
 end
 
-
 module CFG = ProcCfg.Normal
 (* Create an intraprocedural abstract interpreter from the transfer functions defined earlier*)
 module Analyzer = LowerHil.MakeAbstractInterpreter (TransferFunctions (CFG))
 
-let printFunction functionName = L.progress "I was called with %a \n" Procname.pp functionName
-
-let printList list = Caml.List.iter printFunction list
-
-let printProblems (analysisData : ReadCopyUpdateDomain.summary InterproceduralAnalysis.file_t) :
-    IssueLog.t = printList analysisData.procedures; IssueLog.empty
+let printProblems (_analysisData : ReadCopyUpdateDomain.summary InterproceduralAnalysis.file_t) :
+    IssueLog.t = 
+    (*let procedureSet         = ReadCopyUpdateDomain.functionCallsInit                                                               in 
+    let stringProcedureSet   = ReadCopyUpdateDomain.procList2stringSet analysisData.procedures procedureSet                         in
+    let functionsCalled      = ReadCopyUpdateDomain.getFunctionsCalled analysisData.procedures analysisData.analyze_file_dependency in
+    let topLevelFunctions    = ReadCopyUpdateDomain.diffSets stringProcedureSet functionsCalled                                     in
+    *)
+     IssueLog.empty
 
 (** 
 L.progress "Start %a \n" String.pp (Procname.to_string (Procdesc.get_proc_name analysisData.proc_desc)) 

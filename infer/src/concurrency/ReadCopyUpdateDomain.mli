@@ -35,23 +35,28 @@ type problem =
 
 
 module Summary : sig
-
       val updateSummary        : t -> t -> t   (** Updates a current summary with abstract state *)
-
 end
 
 module FunctionSet : sig
-
       type t 
       val compare              : t -> t -> int
-
 end
 
-val topLevelFunctionsInit      : FunctionSet.t
+module ProblemSet : sig
+        type t 
+        val compare              : t -> t -> int
+end
 
-val addTopLevelFunction        : string -> FunctionSet.t -> FunctionSet.t
+val functionCallsInit          : FunctionSet.t
 
-val removeTopLevelFunction     : string -> FunctionSet.t -> FunctionSet.t
+val getFunctionsCalled         : 'a list -> ('a -> (Procdesc.t * t) option) -> FunctionSet.t
+
+val diffSets                   : ProblemSet.t -> ProblemSet.t -> ProblemSet.t 
+
+val addFunctionCall            : Procname.t -> t -> t
+
+val removeFunctionCall         : Procname.t -> t -> t
 
 val createLock                 : string -> int -> int -> AccessPath.base -> Location.t -> lockInfo
 
@@ -67,7 +72,7 @@ val decreaseLockScore          : lockInfo  -> t -> t
 
 val applySummary               : t -> t -> t
 
-val findProblem                : string ->  AccessPath.base -> Location.t -> t -> problem option
+val findProblem                : string -> AccessPath.base -> Location.t -> t -> problem option
 
 val checkIfLocked              : lockInfo -> bool 
 
