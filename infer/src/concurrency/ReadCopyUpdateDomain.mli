@@ -18,7 +18,7 @@ type lockInfo =
       mutable lockScoreMin : int;            (** score of the lock - start of the interval *)
       mutable lockScoreMax : int;            (** score of the lock - end of the interval *)
               accessPath   : AccessPath.base;(** access path of the lock *)
-              loc          : Location.t      (** line of code where the lock was locked *)
+              loc          : Location.t;     (** line of code where the lock was locked *)
 }
 
 type problem = 
@@ -35,28 +35,32 @@ type problem =
 
 
 module Summary : sig
-      val updateSummary        : t -> t -> t   (** Updates a current summary with abstract state *)
+      val updateSummary        : t -> Errlog.t -> t   (** Updates a current summary with abstract state *)
 end
 
 module FunctionSet : sig
       type t 
+      type elt
       val compare              : t -> t -> int
 end
 
-module ProblemSet : sig
-        type t 
-        val compare              : t -> t -> int
-end
+val procList2Set               : Procname.t list  -> FunctionSet.t -> FunctionSet.t
+
+val printFunctionSet           : FunctionSet.t -> unit 
 
 val functionCallsInit          : FunctionSet.t
 
-val getFunctionsCalled         : 'a list -> ('a -> (Procdesc.t * t) option) -> FunctionSet.t
+val functionSet2list           : FunctionSet.t -> Procname.t list
 
-val diffSets                   : ProblemSet.t -> ProblemSet.t -> ProblemSet.t 
+val getFunctionsCalled         : Procname.t list -> (Procname.t -> (Procdesc.t * t) option) -> FunctionSet.t
+
+val diffSets                   : FunctionSet.t -> FunctionSet.t -> FunctionSet.t 
 
 val addFunctionCall            : Procname.t -> t -> t
 
 val removeFunctionCall         : Procname.t -> t -> t
+
+val output                     : Procname.t list -> (Procname.t -> (Procdesc.t * t) option) -> unit
 
 val createLock                 : string -> int -> int -> AccessPath.base -> Location.t -> lockInfo
 
@@ -76,7 +80,7 @@ val findProblem                : string -> AccessPath.base -> Location.t -> t ->
 
 val checkIfLocked              : lockInfo -> bool 
 
-val printProblems              : t InterproceduralAnalysis.t -> t -> unit
+val printProblems              : Procdesc.t -> t -> unit
 
 val addProblem                 : problem -> t -> t 
 

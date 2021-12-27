@@ -92,14 +92,13 @@ module CFG = ProcCfg.Normal
 (* Create an intraprocedural abstract interpreter from the transfer functions defined earlier*)
 module Analyzer = LowerHil.MakeAbstractInterpreter (TransferFunctions (CFG))
 
-let printProblems (_analysisData : ReadCopyUpdateDomain.summary InterproceduralAnalysis.file_t) :
+let printProblems (analysisData : ReadCopyUpdateDomain.summary InterproceduralAnalysis.file_t) :
     IssueLog.t = 
-    (*let procedureSet         = ReadCopyUpdateDomain.functionCallsInit                                                               in 
-    let stringProcedureSet   = ReadCopyUpdateDomain.procList2stringSet analysisData.procedures procedureSet                         in
-    let functionsCalled      = ReadCopyUpdateDomain.getFunctionsCalled analysisData.procedures analysisData.analyze_file_dependency in
-    let topLevelFunctions    = ReadCopyUpdateDomain.diffSets stringProcedureSet functionsCalled                                     in
-    *)
-     IssueLog.empty
+    let procedureSet         = ReadCopyUpdateDomain.procList2Set analysisData.procedures ReadCopyUpdateDomain.functionCallsInit           in 
+    let functionsCalled      = ReadCopyUpdateDomain.getFunctionsCalled analysisData.procedures analysisData.analyze_file_dependency       in
+    let topLevelFunctions    = ReadCopyUpdateDomain.diffSets procedureSet functionsCalled                                                 in
+    let topLevelList         = ReadCopyUpdateDomain.functionSet2list topLevelFunctions                                                    in
+    ReadCopyUpdateDomain.output topLevelList analysisData.analyze_file_dependency; IssueLog.empty
 
 (** 
 L.progress "Start %a \n" String.pp (Procname.to_string (Procdesc.get_proc_name analysisData.proc_desc)) 
@@ -113,6 +112,6 @@ let checker (analysisData : ReadCopyUpdateDomain.summary InterproceduralAnalysis
       match Analyzer.compute_post analysisData ~initial:init analysisData.proc_desc with 
       (** An abstract state has been created, make summary *)
       | Some (procedureAstate : ReadCopyUpdateDomain.t) ->
-         ReadCopyUpdateDomain.printProblems analysisData procedureAstate ;Some (ReadCopyUpdateDomain.Summary.updateSummary procedureAstate ReadCopyUpdateDomain.initial )
+         Some (ReadCopyUpdateDomain.Summary.updateSummary procedureAstate analysisData.err_log )
       | None -> 
          L.die InternalError "The detection of read copy update violations failed to compute a post for '%a'." Procname.pp (Procdesc.get_proc_name analysisData.proc_desc)

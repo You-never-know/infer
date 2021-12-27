@@ -202,10 +202,10 @@ let all_checkers =
          [(checker, Clang); (checker, Java)] ) } 
   ; { checker= ReadCopyUpdateViolation
     ; callbacks=
-        (let checker =
+        (let checker = 
            interprocedural Payloads.Fields.read_copy_update
              ReadCopyUpdateViolations.checker
-         and checkerFile =
+         and checkerFile =  
             file Temporary Payloads.Fields.read_copy_update
              ReadCopyUpdateViolations.printProblems 
          in
