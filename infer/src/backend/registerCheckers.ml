@@ -227,7 +227,24 @@ let all_checkers =
         (let java_validator = intraprocedural (SilValidation.checker Language.Java) in
          let clang_validator = intraprocedural (SilValidation.checker Language.Clang) in
          let erlang_validator = intraprocedural (SilValidation.checker Language.Erlang) in
-         [(java_validator, Java); (clang_validator, Clang); (erlang_validator, Erlang)] ) } ]
+         [(java_validator, Java); (clang_validator, Clang); (erlang_validator, Erlang)] ) }
+  ; { checker= AtomicSets
+    ; callbacks=
+        (let checker : callback_fun =
+           interprocedural Payloads.Fields.atomic_sets AtomicSets.analyse_procedure
+         and checker_file : callback_fun =
+           file Payloads.Fields.atomic_sets AtomicSets.print_atomic_sets
+         in
+         [(checker, Clang); (checker, Java); (checker_file, Clang); (checker_file, Java)] ) }
+  ; { checker= AtomicityViolations
+    ; callbacks=
+        (let checker : callback_fun =
+           interprocedural Payloads.Fields.atomicity_violations
+             AtomicityViolations.analyse_procedure
+         and checker_file : callback_fun =
+           file Payloads.Fields.atomicity_violations AtomicityViolations.report_atomicity_violations
+         in
+         [(checker, Clang); (checker, Java); (checker_file, Clang); (checker_file, Java)] ) } ]
 
 
 let get_active_checkers () =

@@ -1,6 +1,6 @@
 <img src="website/static/img/logo.png" alt="logo" width="15%" />
 
-# Infer ![build](https://github.com/facebook/infer/actions/workflows/install.yml/badge.svg) ![website](https://github.com/facebook/infer/actions/workflows/deploy.yml/badge.svg)
+# Infer [![Atomer](https://github.com/harmim/infer/actions/workflows/atomer.yml/badge.svg)](https://github.com/harmim/infer/actions/workflows/atomer.yml)
 
 [Infer](http://fbinfer.com/) is a static analysis tool for Java,
 C++, Objective-C, and C. Infer is written in [OCaml](https://ocaml.org/).

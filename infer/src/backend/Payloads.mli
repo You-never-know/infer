@@ -37,7 +37,9 @@ include sig
     ; lineage: Lineage.Summary.t option Lazy.t
     ; lineage_shape: LineageShape.Summary.t option Lazy.t
     ; starvation: StarvationDomain.summary option Lazy.t
-    ; uninit: UninitDomain.Summary.t option Lazy.t }
+    ; uninit: UninitDomain.Summary.t option Lazy.t
+    ; atomic_sets: AtomicSetsDomain.Summary.t option Lazy.t
+    ; atomicity_violations: AtomicityViolationsDomain.Summary.t option Lazy.t }
   [@@deriving fields, yojson_of]
 end
 

@@ -1,0 +1,3 @@
+void AllowedClasses.test(): {boolean ArrayList.add(Object), void ArrayList.clear(), void Foo.f()}
+
+# Number of (analysed functions; atomic sets; atomic functions): (1; 1; 3)

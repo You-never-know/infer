@@ -113,6 +113,106 @@ OPTIONS
            Additional Buck flavors to append to targets discovered by the
            --buck-compilation-database option.           See also infer-capture(1).
 
+       --atomic-sets
+           Activates: checker atomic-sets: Atomicity violations analysis -
+           detection of atomic sets. (Conversely: --no-atomic-sets)
+    See also infer-analyze(1).
+
+       --atomic-sets-file-append
+           Activates: Specify whether functions should be appended to the
+           atomic sets file instead of overriding in the 'atomic-sets'
+           checker. A default value is 'false'. (Conversely:
+           --no-atomic-sets-file-append)           See also infer-analyze(1).
+
+       --atomic-sets-functions-depth-limit int
+           Specify the maximum depth in the hierarchy of function calls to
+           which function calls will be considered during the 'atomic-sets'
+           checker analysis. A default value is '10'.           See also infer-analyze(1).
+
+       --atomic-sets-ignore-single-atomic-calls
+           Activates: Specify whether function calls that appear just once in
+           critical sections should be ignored in the 'atomic-sets' checker.
+           A default value is 'false'. (Conversely:
+           --no-atomic-sets-ignore-single-atomic-calls)           See also infer-analyze(1).
+
+       --atomic-sets-locked-functions-limit int
+           Specify the maximum number of function calls that could appear in
+           a critical section in the 'atomic-sets' checker. Critical sections
+           with more function calls will be ignored. A default value is '20'.
+    See also infer-analyze(1).
+
+       --atomic-sets-only
+           Activates: Enable atomic-sets and disable all other checkers
+           (Conversely: --no-atomic-sets-only)           See also infer-analyze(1).
+
+       --atomic-sets-widen-limit int
+           Specify the maximum number of iterations in a widening operator in
+           the 'atomic-sets' checker. A default value is '5'.           See also infer-analyze(1).
+
+       --atomicity-allowed-classes path
+           Specify a file with class names (one class name per a line;
+           considered as a regexp if the line starts with 'R' followed by a
+           whitespace, an exact match otherwise) whose method calls should be
+           allowed during the analysis of 'atomic-sets' and
+           'atomicity-violations' checkers. Other calls will be ignored.
+    See also infer-analyze(1).
+
+       --atomicity-allowed-function-analyses path
+           Specify a file with function names (one function name per a line;
+           considered as a regexp if the line starts with 'R' followed by a
+           whitespace, an exact match otherwise) whose analysis should be
+           allowed during the analysis of 'atomic-sets' and
+           'atomicity-violations' checkers. Other functions will be ignored.
+    See also infer-analyze(1).
+
+       --atomicity-allowed-function-calls path
+           Specify a file with function names (one function name per a line;
+           considered as a regexp if the line starts with 'R' followed by a
+           whitespace, an exact match otherwise) whose calls should be
+           allowed during the analysis of 'atomic-sets' and
+           'atomicity-violations' checkers. Other functions will be ignored.
+    See also infer-analyze(1).
+
+       --atomicity-ignored-function-analyses path
+           Specify a file with function names (one function name per a line;
+           considered as a regexp if the line starts with 'R' followed by a
+           whitespace, an exact match otherwise) whose analysis should be
+           ignored during the analysis of 'atomic-sets' and
+           'atomicity-violations' checkers.           See also infer-analyze(1).
+
+       --atomicity-ignored-function-calls path
+           Specify a file with function names (one function name per a line;
+           considered as a regexp if the line starts with 'R' followed by a
+           whitespace, an exact match otherwise) whose calls should be
+           ignored during the analysis of 'atomic-sets' and
+           'atomicity-violations' checkers.           See also infer-analyze(1).
+
+       --atomicity-lock-level-limit int
+           Specify the maximum expected level of ownership over the same lock
+           object. An over-approximation of the number of times the lock has
+           been acquired. A default value is '5'.           See also infer-analyze(1).
+
+       --atomicity-violations
+           Activates: checker atomicity-violations: Atomicity violations
+           analysis - detection of atomicity violations. (Conversely:
+           --no-atomicity-violations)           See also infer-analyze(1).
+
+       --no-atomicity-violations-ignore-local-calls
+           Deactivates: Specify whether function calls on local objects
+           should be ignored in the 'atomicity-violations' checker. A default
+           value is 'true'. (Conversely:
+           --atomicity-violations-ignore-local-calls)           See also infer-analyze(1).
+
+       --atomicity-violations-only
+           Activates: Enable atomicity-violations and disable all other
+           checkers (Conversely: --no-atomicity-violations-only)
+    See also infer-analyze(1).
+
+       --atomicity-violations-widen-limit int
+           Specify the maximum number of iterations in a widening operator in
+           the 'atomicity-violations' checker. A default value is '10'.
+    See also infer-analyze(1).
+
        --biabduction
            Activates: biabduction checker: This analysis deals with a range
            of issues, many linked to memory safety.           
@@ -488,6 +588,8 @@ OPTIONS
              ARRAY_OUT_OF_BOUNDS_L1 (disabled by default),
              ARRAY_OUT_OF_BOUNDS_L2 (disabled by default),
              ARRAY_OUT_OF_BOUNDS_L3 (disabled by default),
+             ATOMICITY_VIOLATION_ERROR (enabled by default),
+             ATOMICITY_VIOLATION_WARNING (enabled by default),
              Abduction_case_not_implemented (enabled by default),
              Array_of_pointsto (enabled by default),
              Assert_failure (enabled by default),
@@ -2017,6 +2119,21 @@ INTERNAL OPTIONS
 
        --append-buck-flavors-reset
            Set --append-buck-flavors to the empty list.
+
+       --atomicity-allowed-classes-reset
+           Cancel the effect of --atomicity-allowed-classes.
+
+       --atomicity-allowed-function-analyses-reset
+           Cancel the effect of --atomicity-allowed-function-analyses.
+
+       --atomicity-allowed-function-calls-reset
+           Cancel the effect of --atomicity-allowed-function-calls.
+
+       --atomicity-ignored-function-analyses-reset
+           Cancel the effect of --atomicity-ignored-function-analyses.
+
+       --atomicity-ignored-function-calls-reset
+           Cancel the effect of --atomicity-ignored-function-calls.
 
        --backtrack-level int
            Maximum level of backtracking to convert an absolute path to path

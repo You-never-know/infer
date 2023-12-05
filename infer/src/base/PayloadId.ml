@@ -28,6 +28,8 @@ type t =
   | Starvation
   | Nullsafe
   | Uninit
+  | AtomicSets
+  | AtomicityViolations
 [@@deriving variants]
 
 let database_fields = List.map ~f:fst Variants.descriptions

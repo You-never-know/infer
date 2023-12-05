@@ -29,6 +29,8 @@ type t =
   | Starvation
   | Nullsafe
   | Uninit
+  | AtomicSets
+  | AtomicityViolations
 [@@deriving variants]
 
 val database_fields : string list

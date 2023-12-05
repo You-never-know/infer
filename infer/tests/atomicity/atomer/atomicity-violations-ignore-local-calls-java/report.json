@@ -1,0 +1,46 @@
+[
+    {
+        "bug_type": "ATOMICITY_VIOLATION_ERROR",
+        "qualifier": "Atomicity Violation! - Functions 'void Foo.f1(int)' and 'void Foo.f2(int)' should be called atomically.",
+        "severity": "ERROR",
+        "line": 25,
+        "column": -1,
+        "procedure": "Test.main(java.lang.String[]):void",
+        "procedure_start_line": 0,
+        "file": "Test.java",
+        "bug_trace": [
+            {
+                "level": 0,
+                "filename": "Test.java",
+                "line_number": 25,
+                "column_number": -1,
+                "description": "Atomicity Violation! - Functions 'void Foo.f1(int)' and 'void Foo.f2(int)' should be called atomically."
+            }
+        ],
+        "key": "Test.java|main|ATOMICITY_VIOLATION_ERROR",
+        "hash": "8e562ec0b6ea6e1de75d394ddd69c282",
+        "bug_type_hum": "Atomicity Violation"
+    },
+    {
+        "bug_type": "ATOMICITY_VIOLATION_ERROR",
+        "qualifier": "Atomicity Violation! - Functions 'void Foo.f1(int)' and 'void Foo.f2(int)' should be called atomically.",
+        "severity": "ERROR",
+        "line": 31,
+        "column": -1,
+        "procedure": "Test.main(java.lang.String[]):void",
+        "procedure_start_line": 0,
+        "file": "Test.java",
+        "bug_trace": [
+            {
+                "level": 0,
+                "filename": "Test.java",
+                "line_number": 31,
+                "column_number": -1,
+                "description": "Atomicity Violation! - Functions 'void Foo.f1(int)' and 'void Foo.f2(int)' should be called atomically."
+            }
+        ],
+        "key": "Test.java|main|ATOMICITY_VIOLATION_ERROR",
+        "hash": "8e562ec0b6ea6e1de75d394ddd69c282",
+        "bug_type_hum": "Atomicity Violation"
+    }
+]

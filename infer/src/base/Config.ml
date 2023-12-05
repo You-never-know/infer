@@ -189,6 +189,8 @@ let manual_scheduler = "ANALYSIS SCHEDULER OPTIONS"
 
 let manual_siof = "SIOF CHECKER OPTIONS"
 
+let manual_atomicity_violations : string = "ATOMICITY VIOLATIONS CHECKER OPTIONS"
+
 let max_narrows = 5
 
 (** Maximum number of widens that can be performed before the analysis will intentionally crash.
@@ -3444,6 +3446,105 @@ and trace_ondemand =
 and trace_topl =
   CLOpt.mk_bool ~long:"trace-topl" "Detailed tracing information during Topl analysis"
 
+and atomicity_ignored_function_calls_file : string option ref =
+  CLOpt.mk_path_opt ~long:"atomicity-ignored-function-calls"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify a file with function names (one function name per a line; considered as a regexp if \
+     the line starts with 'R' followed by a whitespace, an exact match otherwise) whose calls \
+     should be ignored during the analysis of 'atomic-sets' and 'atomicity-violations' checkers."
+
+
+and atomicity_ignored_function_analyses_file : string option ref =
+  CLOpt.mk_path_opt ~long:"atomicity-ignored-function-analyses"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify a file with function names (one function name per a line; considered as a regexp if \
+     the line starts with 'R' followed by a whitespace, an exact match otherwise) whose analysis \
+     should be ignored during the analysis of 'atomic-sets' and 'atomicity-violations' checkers."
+
+
+and atomicity_allowed_function_calls_file : string option ref =
+  CLOpt.mk_path_opt ~long:"atomicity-allowed-function-calls"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify a file with function names (one function name per a line; considered as a regexp if \
+     the line starts with 'R' followed by a whitespace, an exact match otherwise) whose calls \
+     should be allowed during the analysis of 'atomic-sets' and 'atomicity-violations' checkers. \
+     Other functions will be ignored."
+
+
+and atomicity_allowed_function_analyses_file : string option ref =
+  CLOpt.mk_path_opt ~long:"atomicity-allowed-function-analyses"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify a file with function names (one function name per a line; considered as a regexp if \
+     the line starts with 'R' followed by a whitespace, an exact match otherwise) whose analysis \
+     should be allowed during the analysis of 'atomic-sets' and 'atomicity-violations' checkers. \
+     Other functions will be ignored."
+
+
+and atomicity_lock_level_limit : int ref =
+  CLOpt.mk_int ~default:5 ~long:"atomicity-lock-level-limit"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify the maximum expected level of ownership over the same lock object. An \
+     over-approximation of the number of times the lock has been acquired. A default value is '5'."
+
+
+and atomicity_allowed_classes_file : string option ref =
+  CLOpt.mk_path_opt ~long:"atomicity-allowed-classes"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify a file with class names (one class name per a line; considered as a regexp if the \
+     line starts with 'R' followed by a whitespace, an exact match otherwise) whose method calls \
+     should be allowed during the analysis of 'atomic-sets' and 'atomicity-violations' checkers. \
+     Other calls will be ignored."
+
+
+and atomic_sets_widen_limit : int ref =
+  CLOpt.mk_int ~default:5 ~long:"atomic-sets-widen-limit"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify the maximum number of iterations in a widening operator in the 'atomic-sets' checker. \
+     A default value is '5'."
+
+
+and atomic_sets_locked_functions_limit : int ref =
+  CLOpt.mk_int ~default:20 ~long:"atomic-sets-locked-functions-limit"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify the maximum number of function calls that could appear in a critical section in the \
+     'atomic-sets' checker. Critical sections with more function calls will be ignored. A default \
+     value is '20'."
+
+
+and atomic_sets_file_append : bool ref =
+  CLOpt.mk_bool ~default:false ~long:"atomic-sets-file-append"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify whether functions should be appended to the atomic sets file instead of overriding in \
+     the 'atomic-sets' checker. A default value is 'false'."
+
+
+and atomic_sets_functions_depth_limit : int ref =
+  CLOpt.mk_int ~default:10 ~long:"atomic-sets-functions-depth-limit"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify the maximum depth in the hierarchy of function calls to which function calls will be \
+     considered during the 'atomic-sets' checker analysis. A default value is '10'."
+
+
+and atomic_sets_ignore_single_atomic_calls : bool ref =
+  CLOpt.mk_bool ~default:false ~long:"atomic-sets-ignore-single-atomic-calls"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify whether function calls that appear just once in critical sections should be ignored \
+     in the 'atomic-sets' checker. A default value is 'false'."
+
+
+and atomicity_violations_widen_limit : int ref =
+  CLOpt.mk_int ~default:10 ~long:"atomicity-violations-widen-limit"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify the maximum number of iterations in a widening operator in the 'atomicity-violations' \
+     checker. A default value is '10'."
+
+
+and atomicity_violations_ignore_local_calls : bool ref =
+  CLOpt.mk_bool ~default:true ~long:"atomicity-violations-ignore-local-calls"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify whether function calls on local objects should be ignored in the \
+     'atomicity-violations' checker. A default value is 'true'."
+
 
 and uninit_interproc =
   CLOpt.mk_bool ~long:"uninit-interproc" "Run uninit check in the experimental interprocedural mode"
@@ -4649,6 +4750,34 @@ and trace_topl = !trace_topl
 and uninit_interproc = !uninit_interproc
 
 and unix_fork = !unix_fork
+
+and atomicity_ignored_function_calls_file : string option = !atomicity_ignored_function_calls_file
+
+and atomicity_ignored_function_analyses_file : string option =
+  !atomicity_ignored_function_analyses_file
+
+and atomicity_allowed_function_calls_file : string option = !atomicity_allowed_function_calls_file
+
+and atomicity_allowed_function_analyses_file : string option =
+  !atomicity_allowed_function_analyses_file
+
+and atomicity_lock_level_limit : int = !atomicity_lock_level_limit
+
+and atomicity_allowed_classes_file : string option = !atomicity_allowed_classes_file
+
+and atomic_sets_widen_limit : int = !atomic_sets_widen_limit
+
+and atomic_sets_locked_functions_limit : int = !atomic_sets_locked_functions_limit
+
+and atomic_sets_file_append : bool = !atomic_sets_file_append
+
+and atomic_sets_functions_depth_limit : int = !atomic_sets_functions_depth_limit
+
+and atomic_sets_ignore_single_atomic_calls : bool = !atomic_sets_ignore_single_atomic_calls
+
+and atomicity_violations_widen_limit : int = !atomicity_violations_widen_limit
+
+and atomicity_violations_ignore_local_calls : bool = !atomicity_violations_ignore_local_calls
 
 and workspace = !workspace
 

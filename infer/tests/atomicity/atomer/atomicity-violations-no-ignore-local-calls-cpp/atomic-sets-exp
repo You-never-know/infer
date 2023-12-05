@@ -1,0 +1,4 @@
+test1: {f1, f2}
+LocalCalls::test1: {Foo::f1, Foo::f2}
+
+# Number of (analysed functions; atomic sets; atomic functions): (2; 2; 4)

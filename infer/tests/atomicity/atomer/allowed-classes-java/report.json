@@ -1,0 +1,24 @@
+[
+    {
+        "bug_type": "ATOMICITY_VIOLATION_ERROR",
+        "qualifier": "Atomicity Violation! - Functions 'void ArrayList.clear()' and 'boolean ArrayList.add(Object)' should be called atomically.",
+        "severity": "ERROR",
+        "line": 31,
+        "column": -1,
+        "procedure": "AllowedClasses.test_violations():void",
+        "procedure_start_line": 0,
+        "file": "Test.java",
+        "bug_trace": [
+            {
+                "level": 0,
+                "filename": "Test.java",
+                "line_number": 31,
+                "column_number": -1,
+                "description": "Atomicity Violation! - Functions 'void ArrayList.clear()' and 'boolean ArrayList.add(Object)' should be called atomically."
+            }
+        ],
+        "key": "Test.java|test_violations|ATOMICITY_VIOLATION_ERROR",
+        "hash": "b91291819f40d319d59f5815332c733b",
+        "bug_type_hum": "Atomicity Violation"
+    }
+]

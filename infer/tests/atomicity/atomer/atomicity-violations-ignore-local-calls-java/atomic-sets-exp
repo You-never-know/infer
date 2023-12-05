@@ -1,0 +1,3 @@
+void LocalCalls.test1(): {void Foo.f1(int), void Foo.f2(int)}
+
+# Number of (analysed functions; atomic sets; atomic functions): (1; 1; 2)

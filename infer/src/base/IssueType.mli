@@ -400,4 +400,8 @@ val wrong_argument_number : t
 
 val unreachable_cost_call : kind:CostKind.t -> t
 
+val atomicity_violation_error : t
+
+val atomicity_violation_warning : t
+
 module Map : PrettyPrintable.PPMap with type key = t

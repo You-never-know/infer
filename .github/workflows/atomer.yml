@@ -1,0 +1,126 @@
+# Author: Dominik Harmim <iharmim@fit.vut.cz>
+
+name: Atomer
+
+on:
+  push:
+    branches: [atomer]
+
+  pull_request:
+    branches: [atomer]
+
+jobs:
+  build-and-test:
+    name: Build Infer with Atomer and Run Tests
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+        ocaml-compiler: ['ocaml-variants.4.14.0+options,ocaml-option-flambda']
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout Infer with Atomer
+        uses: actions/checkout@v3
+        with:
+          ref: atomer
+          fetch-depth: 0
+
+      - name: Install Required APT Packages for Ubuntu
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt install -y --no-install-recommends bubblewrap libmpfr-dev \
+            ninja-build
+
+      - name: Install Required Brew Packages for macOS
+        if: runner.os == 'macOS'
+        run: brew install ninja automake lzlib coreutils shellcheck
+
+      - name: Setup Java SDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Get OS Version
+        id: os
+        uses: sersoft-gmbh/os-version-action@v2
+
+      - name: Force the Use of Test Dependencies
+        run: cp opam/infer-tests.opam.locked opam/infer.opam.locked
+
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - name: Compute Hash of Clang Installation
+        id: clang-hash
+        run: |
+          HASH="$(./facebook-clang-plugins/clang/setup.sh --clang-hash)"
+          echo "value=$HASH" >> "$GITHUB_OUTPUT"
+
+      - name: Attempt to Get Clang from the Cache
+        id: clang-cache
+        uses: actions/cache@v3
+        with:
+          path: facebook-clang-plugins/clang/install
+          key: "clang-${{ matrix.os }}-${{ steps.os.outputs.version }}-\
+            ${{ steps.clang-hash.outputs.value }}"
+
+      - name: Record that the Clang Cache Was Hit
+        if: steps.clang-cache.outputs.cache-hit == 'true'
+        run: ./facebook-clang-plugins/clang/setup.sh --only-record-install
+
+      - name: Build Clang on Cache Misses
+        if: steps.clang-cache.outputs.cache-hit != 'true'
+        run: |
+          ./facebook-clang-plugins/clang/src/prepare_clang_src.sh
+          CC=clang CXX=clang++ ./facebook-clang-plugins/clang/setup.sh --ninja \
+            --sequential-link
+
+      - name: Build Infer with Atomer on Linux
+        if: runner.os == 'Linux'
+        run: |
+          ./build-infer.sh -y --user-opam-switch
+          make
+
+      - name: Build Infer with Atomer on macOS
+        if: runner.os == 'macOS'
+        run: |
+          ./build-infer.sh -y --user-opam-switch -- --disable-python-analyzers
+          make
+
+      - name: Install Infer
+        run: |
+          sudo make install BUILD_MODE=opt
+          sudo chown -R "$USER" .
+
+      - name: Development Setup
+        run: |
+          eval $(opam env) && make devsetup
+          opam install odoc -y
+
+      - name: Test Infer
+        run: make test NDKBUILD=no
+
+      - name: Test Atomer
+        run: ./infer/tests/atomicity/atomer/run.sh
+
+      - name: ShellCheck
+        run: shellcheck infer/tests/atomicity/atomer/run.sh
+
+      - name: Documentation
+        run: |
+          make manuals
+          NO_BROWSE_DOC=yes make doc
+
+      - name: Code Formatting
+        run: make fmt

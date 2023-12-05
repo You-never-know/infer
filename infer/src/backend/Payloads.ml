@@ -27,7 +27,9 @@ type t =
   ; lineage: Lineage.Summary.t option Lazy.t
   ; lineage_shape: LineageShape.Summary.t option Lazy.t
   ; starvation: StarvationDomain.summary option Lazy.t
-  ; uninit: UninitDomain.Summary.t option Lazy.t }
+  ; uninit: UninitDomain.Summary.t option Lazy.t
+  ; atomic_sets: AtomicSetsDomain.Summary.t option Lazy.t
+  ; atomicity_violations: AtomicityViolationsDomain.Summary.t option Lazy.t }
 [@@deriving fields]
 
 let yojson_of_t {pulse} =
@@ -44,6 +46,10 @@ let all_fields =
   let mk field payload_id pp = mk_pe field payload_id (fun _ -> pp) in
   Fields.to_list
     ~annot_map:(fun f -> mk f AnnotMap AnnotationReachabilityDomain.pp)
+    ~atomic_sets:(fun (f : (t, AtomicSetsDomain.Summary.t option Lazy.t) Field.t) : field ->
+          mk f AtomicSets AtomicSetsDomain.Summary.pp )
+    ~atomicity_violations:(fun (f : (t, AtomicityViolationsDomain.Summary.t option Lazy.t) Field.t)
+                                  : field -> mk f AtomicityViolations AtomicityViolationsDomain.Summary.pp )
     ~biabduction:(fun f -> mk_pe f Biabduction BiabductionSummary.pp)
     ~buffer_overrun_analysis:(fun f -> mk f BufferOverrunAnalysis BufferOverrunAnalysisSummary.pp)
     ~buffer_overrun_checker:(fun f -> mk f BufferOverrunChecker BufferOverrunCheckerSummary.pp)
@@ -96,7 +102,9 @@ let empty =
   ; lineage= no_payload
   ; lineage_shape= no_payload
   ; starvation= no_payload
-  ; uninit= no_payload }
+  ; uninit= no_payload
+  ; atomic_sets= no_payload
+  ; atomicity_violations= no_payload }
 
 
 module SQLite = struct
@@ -145,6 +153,7 @@ module SQLite = struct
       ~scope_leakage:data_of_sqlite_column ~siof:data_of_sqlite_column
       ~lineage:data_of_sqlite_column ~lineage_shape:data_of_sqlite_column
       ~starvation:data_of_sqlite_column ~uninit:data_of_sqlite_column
+      ~atomic_sets:data_of_sqlite_column ~atomicity_violations:data_of_sqlite_column
 
 
   let eager_load stmt ~first_column = (make_eager first_column |> fst) stmt
@@ -202,5 +211,7 @@ module SQLite = struct
     ; lineage= lazy (load table ~proc_uid Lineage)
     ; lineage_shape= lazy (load table ~proc_uid LineageShape)
     ; starvation= lazy (load table ~proc_uid Starvation)
-    ; uninit= lazy (load table ~proc_uid Uninit) }
+    ; uninit= lazy (load table ~proc_uid Uninit)
+    ; atomic_sets= lazy (load table ~proc_uid AtomicSets)
+    ; atomicity_violations= lazy (load table ~proc_uid AtomicityViolations) }
 end

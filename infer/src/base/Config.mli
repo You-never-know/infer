@@ -878,6 +878,32 @@ val uninit_interproc : bool
 
 val unix_fork : bool
 
+val atomicity_ignored_function_calls_file : string option
+
+val atomicity_ignored_function_analyses_file : string option
+
+val atomicity_allowed_function_calls_file : string option
+
+val atomicity_allowed_function_analyses_file : string option
+
+val atomicity_lock_level_limit : int
+
+val atomicity_allowed_classes_file : string option
+
+val atomic_sets_widen_limit : int
+
+val atomic_sets_locked_functions_limit : int
+
+val atomic_sets_file_append : bool
+
+val atomic_sets_functions_depth_limit : int
+
+val atomic_sets_ignore_single_atomic_calls : bool
+
+val atomicity_violations_widen_limit : int
+
+val atomicity_violations_ignore_local_calls : bool
+
 val workspace : string option
 
 val write_html : bool
