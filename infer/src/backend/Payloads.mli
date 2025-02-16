@@ -36,7 +36,10 @@ include sig
     ; siof: SiofDomain.Summary.t SafeLazy.t option
     ; lineage: Lineage.Summary.t SafeLazy.t option
     ; lineage_shape: LineageShape.Summary.t SafeLazy.t option
-    ; starvation: StarvationDomain.summary SafeLazy.t option }
+    ; starvation: StarvationDomain.summary SafeLazy.t option 
+    ; atomic_sets: AtomicSetsDomain.Summary.t option SafeLazy.t
+    ; atomicity_violations: AtomicityViolationsDomain.Summary.t option SafeLazy.t 
+}
   [@@deriving fields, yojson_of]
 end
 

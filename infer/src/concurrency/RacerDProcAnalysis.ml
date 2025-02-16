@@ -85,13 +85,16 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
   let process_lock_effect_or_summary analyze_dependency tenv formals ret_access_exp callee_pname
       actuals loc (astate : Domain.t) =
     match ConcurrencyModels.get_lock_effect callee_pname actuals with
-    | Lock _ | GuardLock _ | GuardConstruct {acquire_now= true} ->
+    | Lock (_ : HilExp.t list) | GuardLock (_ : HilExp.t) | GuardConstruct {strategy= Default} ->
         Domain.acquire_lock astate
     | Unlock _ | GuardDestroy _ | GuardUnlock _ ->
         Domain.release_lock astate
+    | GuardRelease (_ : HilExp.t) ->
+        (* TODO: guard release *)
+        astate
     | LockedIfTrue _ | GuardLockedIfTrue _ ->
         Domain.lock_if_true ret_access_exp astate
-    | GuardConstruct {acquire_now= false} ->
+    | GuardConstruct {strategy: ConcurrencyModels.guard_strategy = _} ->
         astate
     | NoEffect when RacerDModels.proc_is_ignored_by_racerd callee_pname ->
         astate

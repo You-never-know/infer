@@ -103,6 +103,23 @@ let all_checkers =
              BufferOverrunAnalysis.analyze_procedure
          in
          [(bo_analysis, Clang); (bo_analysis, Java)] ) }
+  ; { checker= AtomicSets
+    ; callbacks=
+        (let checker : callback_fun =
+           interprocedural Payloads.Fields.atomic_sets AtomicSets.analyse_procedure
+         and checker_file : callback_fun =
+           file Payloads.Fields.atomic_sets AtomicSets.print_atomic_sets
+         in
+         [(checker, Clang); (checker, Java); (checker_file, Clang); (checker_file, Java)] ) }
+  ; { checker= AtomicityViolations
+    ; callbacks=
+        (let checker : callback_fun =
+           interprocedural Payloads.Fields.atomicity_violations
+             AtomicityViolations.analyse_procedure
+         and checker_file : callback_fun =
+           file Payloads.Fields.atomicity_violations AtomicityViolations.report_atomicity_violations
+         in
+         [(checker, Clang); (checker, Java); (checker_file, Clang); (checker_file, Java)] ) }  
   ; { checker= BufferOverrunChecker
     ; callbacks=
         (let bo_checker =

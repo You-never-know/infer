@@ -41,6 +41,8 @@
    -open
    Concurrency
    -open
+   Atomicity
+   -open
    Labs
    -open
    Ppx_yojson_conv_lib.Yojson_conv.Primitives))
@@ -59,6 +61,7 @@
   Costlib
   Topllib
   Concurrency
+  Atomicity
   Labs
   Textuallib)
  (preprocess

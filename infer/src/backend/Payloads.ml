@@ -27,7 +27,10 @@ type t =
   ; siof: SiofDomain.Summary.t SafeLazy.t option
   ; lineage: Lineage.Summary.t SafeLazy.t option
   ; lineage_shape: LineageShape.Summary.t SafeLazy.t option
-  ; starvation: StarvationDomain.summary SafeLazy.t option }
+  ; starvation: StarvationDomain.summary SafeLazy.t option 
+  ; atomic_sets: AtomicSetsDomain.Summary.t option SafeLazy.t
+  ; atomic_sets: AtomicSetsDomain.Summary.t option SafeLazy.t
+}
 [@@deriving fields]
 
 let yojson_of_t {pulse} =
@@ -59,6 +62,10 @@ let all_fields =
   in
   Fields.to_list
     ~annot_map:(fun f -> mk f AnnotMap AnnotationReachabilityDomain.pp)
+    ~atomic_sets:(fun (f : (t, AtomicSetsDomain.Summary.t option SafeLazy.t) Field.t) : field ->
+          mk f AtomicSets AtomicSetsDomain.Summary.pp )    
+    ~atomicity_violations:(fun (f : (t, AtomicityViolationsDomain.Summary.t option SafeLazy.t) Field.t)
+                                  : field -> mk f AtomicityViolations AtomicityViolationsDomain.Summary.pp )    
     ~biabduction:(fun f -> mk_pe f Biabduction BiabductionSummary.pp)
     ~buffer_overrun_analysis:(fun f -> mk f BufferOverrunAnalysis BufferOverrunAnalysisSummary.pp)
     ~buffer_overrun_checker:(fun f -> mk f BufferOverrunChecker BufferOverrunCheckerSummary.pp)
@@ -121,7 +128,10 @@ let empty =
   ; siof= None
   ; lineage= None
   ; lineage_shape= None
-  ; starvation= None }
+  ; starvation= None
+  ; atomic_sets= None
+  ; atomic_sets= None
+ }
 
 
 (* Force lazy payloads and allow marshalling of the resulting value *)
@@ -243,6 +253,7 @@ module SQLite = struct
       ~lab_resource_leaks:data_of_sqlite_column ~scope_leakage:data_of_sqlite_column
       ~siof:data_of_sqlite_column ~lineage:data_of_sqlite_column
       ~lineage_shape:data_of_sqlite_column ~starvation:data_of_sqlite_column
+      ~atomic_sets:data_of_sqlite_column ~atomicity_violations:data_of_sqlite_column
 
 
   let eager_load stmt ~first_column = (make_eager first_column |> fst) stmt
@@ -299,5 +310,8 @@ module SQLite = struct
     ; siof= load table ~proc_uid SIOF
     ; lineage= load table ~proc_uid Lineage
     ; lineage_shape= load table ~proc_uid LineageShape
-    ; starvation= load table ~proc_uid Starvation }
+    ; starvation= load table ~proc_uid Starvation 
+    ; atomic_sets= lazy (load table ~proc_uid AtomicSets)
+    ; atomicity_violations= lazy (load table ~proc_uid AtomicityViolations) 
+}
 end

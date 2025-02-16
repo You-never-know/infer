@@ -26,6 +26,8 @@ type t =
   | Lineage
   | LineageShape
   | Starvation
+  | AtomicSets
+  | AtomicityViolations
 [@@deriving compare, equal, hash, show, variants]
 
 let database_fields = List.map ~f:fst Variants.descriptions

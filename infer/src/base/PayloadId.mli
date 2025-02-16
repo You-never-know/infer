@@ -27,6 +27,8 @@ type t =
   | Lineage
   | LineageShape
   | Starvation
+  | AtomicSets
+  | AtomicityViolations
 [@@deriving compare, equal, hash, show, variants]
 
 val database_fields : string list
