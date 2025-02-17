@@ -177,9 +177,7 @@ end = struct
         trylock= tmd.trylock @ ["try_lock_shared"; "try_lock_shared_for"; "try_lock_shared_until"]
       }
     in
-    let config_locks =
-      lock_model_cfg_of_yojson (Yojson.Safe.from_string (Yojson.Basic.to_string Config.lock_model))
-    in
+    let config_locks = lock_model_cfg_of_yojson Config.lock_model in
     [ {c_rec with lock= ["pthread_mutex_lock"]; unlock= ["pthread_mutex_unlock"]}
     ; { def with
         classname= "apache::thrift::concurrency::Monitor"
@@ -458,7 +456,8 @@ let is_android_lifecycle_method tenv pname =
            | ObjcClass _
            | ObjcProtocol _
            | PythonClass _
-           | ObjcBlock _ ->
+           | ObjcBlock _
+           | CFunction _ ->
                false
            | JavaClass java_class_name ->
                JavaClassName.package java_class_name
@@ -478,15 +477,7 @@ let is_android_lifecycle_method tenv pname =
   in
   let test_pname pname =
     match (pname : Procname.t) with
-    | C _
-    | Erlang _
-    | Hack _
-    | Linters_dummy_method
-    | Block _
-    | ObjC_Cpp _
-    | CSharp _
-    | Python _
-    | WithFunctionParameters _ ->
+    | C _ | Erlang _ | Hack _ | Block _ | ObjC_Cpp _ | CSharp _ | Python _ ->
         false
     | Java _ ->
         method_starts_with_on pname
