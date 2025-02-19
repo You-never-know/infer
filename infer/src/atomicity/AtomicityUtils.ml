@@ -1,6 +1,7 @@
 (* Author: Dominik Harmim <iharmim@fit.vut.cz> *)
 
-open! IStd
+open! Stdlib
+open! Core
 module F = Format
 module L = Logging
 
@@ -115,7 +116,7 @@ module Guards = struct
   let reveal_locks (guards : t) : AccessPath.t list -> AccessPath.t list =
     Fn.compose List.concat
       (List.map ~f:(fun (lock : AccessPath.t) : AccessPath.t list ->
-           try GuardMap.find lock guards with Caml.Not_found -> [lock] ) )
+           try GuardMap.find lock guards with Stdlib.Not_found -> [lock] ) )
 end
 
 (* ************************************ Constants *********************************************** *)
@@ -146,7 +147,7 @@ class names_from_file (file : string option) =
         initialised <- true ;
         match file with
         | Some (file : string) ->
-            ( match Sys.file_exists file with
+            ( match Sys_unix.file_exists file with
             | `Yes ->
                 ()
             | _ ->
@@ -180,7 +181,7 @@ class names_from_file (file : string option) =
 
     (** Checks whether a class of a given function is on the list of names. *)
     method contains_class (pname : Procname.t) : bool =
-      match Procname.base_of pname with
+      match Procname.replace_parameters [] pname with
       | ObjC_Cpp (objc_cpp_pname : Procname.ObjC_Cpp.t) ->
           self#contains
             (QualifiedCppName.to_qual_string
@@ -295,7 +296,11 @@ let is_local_call_ignored (proc_desc : Procdesc.t) ~(actuals : HilExp.t list) : 
 let file_summaries (analysis_data : 'a InterproceduralAnalysis.file_t) : (Procname.t * 'a) list =
   List.filter_map analysis_data.procedures
     ~f:(fun (pname : Procname.t) : (Procname.t * 'a) option ->
+      let result_to_option = function
+        | Ok value -> Some value
+        | Error _ -> None
+      in
       Option.value_map
-        (analysis_data.analyze_file_dependency pname)
+        (result_to_option (analysis_data.analyze_file_dependency pname))
         ~default:None
         ~f:(Fn.compose Option.some (Tuple2.create pname)) )

@@ -28,8 +28,8 @@ type t =
   ; lineage: Lineage.Summary.t SafeLazy.t option
   ; lineage_shape: LineageShape.Summary.t SafeLazy.t option
   ; starvation: StarvationDomain.summary SafeLazy.t option 
-  ; atomic_sets: AtomicSetsDomain.Summary.t option SafeLazy.t
-  ; atomic_sets: AtomicSetsDomain.Summary.t option SafeLazy.t
+  ; atomic_sets: AtomicSetsDomain.Summary.t SafeLazy.t option
+  ; atomicity_violations: AtomicityViolationsDomain.Summary.t SafeLazy.t option
 }
 [@@deriving fields]
 
@@ -62,10 +62,10 @@ let all_fields =
   in
   Fields.to_list
     ~annot_map:(fun f -> mk f AnnotMap AnnotationReachabilityDomain.pp)
-    ~atomic_sets:(fun (f : (t, AtomicSetsDomain.Summary.t option SafeLazy.t) Field.t) : field ->
-          mk f AtomicSets AtomicSetsDomain.Summary.pp )    
-    ~atomicity_violations:(fun (f : (t, AtomicityViolationsDomain.Summary.t option SafeLazy.t) Field.t)
-                                  : field -> mk f AtomicityViolations AtomicityViolationsDomain.Summary.pp )    
+    ~atomic_sets:(fun (f : (t, AtomicSetsDomain.Summary.t SafeLazy.t option) Field.t) : field ->
+        mk f AtomicSets AtomicSetsDomain.Summary.pp )
+    ~atomicity_violations:(fun (f : (t, AtomicityViolationsDomain.Summary.t SafeLazy.t option) Field.t) : field ->
+        mk f AtomicityViolations AtomicityViolationsDomain.Summary.pp )
     ~biabduction:(fun f -> mk_pe f Biabduction BiabductionSummary.pp)
     ~buffer_overrun_analysis:(fun f -> mk f BufferOverrunAnalysis BufferOverrunAnalysisSummary.pp)
     ~buffer_overrun_checker:(fun f -> mk f BufferOverrunChecker BufferOverrunCheckerSummary.pp)
@@ -130,7 +130,7 @@ let empty =
   ; lineage_shape= None
   ; starvation= None
   ; atomic_sets= None
-  ; atomic_sets= None
+  ; atomicity_violations= None
  }
 
 
@@ -154,7 +154,10 @@ let freeze t =
   ; siof= freeze t.siof
   ; lineage= freeze t.lineage
   ; lineage_shape= freeze t.lineage_shape
-  ; starvation= freeze t.starvation }
+  ; starvation= freeze t.starvation
+  ; atomic_sets= freeze t.atomic_sets
+  ; atomicity_violations= freeze t.atomicity_violations
+  }
 
 
 module PayloadIdToField =
@@ -311,7 +314,7 @@ module SQLite = struct
     ; lineage= load table ~proc_uid Lineage
     ; lineage_shape= load table ~proc_uid LineageShape
     ; starvation= load table ~proc_uid Starvation 
-    ; atomic_sets= lazy (load table ~proc_uid AtomicSets)
-    ; atomicity_violations= lazy (load table ~proc_uid AtomicityViolations) 
+    ; atomic_sets= load table ~proc_uid AtomicSets
+    ; atomicity_violations= load table ~proc_uid AtomicityViolations
 }
 end

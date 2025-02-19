@@ -42,10 +42,10 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
       | Unlock (locks : HilExp.t list) ->
           Domain.apply_unlocks (get_exps_paths locks) astate
       (* guard construct *)
-      | GuardConstruct {guard: HilExp.t; locks: HilExp.t list; strategy= Default} ->
+      | GuardConstruct {guard=guard; locks=locks; strategy=Default} ->
           Domain.apply_guard_construct (get_exp_path guard) (get_exps_paths locks) ~acquire:true
             astate
-      | GuardConstruct {guard: HilExp.t; locks: HilExp.t list; strategy= DeferLock | AdoptLock} ->
+      | GuardConstruct {guard=guard; locks=locks; strategy=DeferLock | AdoptLock} ->
           Domain.apply_guard_construct (get_exp_path guard) (get_exps_paths locks) ~acquire:false
             astate
       (* guard release *)
@@ -64,7 +64,7 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
       | LockedIfTrue (_ : HilExp.t list) ->
           astate
       (* TODO: guard trylock via constructor *)
-      | GuardConstruct {guard: HilExp.t = _; locks: HilExp.t list = _; strategy= TryToLock} ->
+      | GuardConstruct {guard=_; locks=_; strategy=TryToLock} ->
           astate
       (* TODO: guard trylock *)
       | GuardLockedIfTrue (_ : HilExp.t) ->
@@ -76,16 +76,26 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
           in
           (* Update the abstract state with the function summary as well if it is possible. *)
           match analysis_data.analyze_dependency callee_pname with
-          | Some (summary : Domain.Summary.t) ->
+          | Ok (summary : Domain.Summary.t) ->
               Domain.apply_summary summary astate
-          | None ->
-              astate ) )
-    | _ ->
+          | Error _ ->
+              astate ))
+    | Call
+        ( (_ : AccessPath.base)
+        , (Indirect _ : HilInstr.call)
+        , (_ : HilExp.t list)
+        , (_ : CallFlags.t)
+        , (_ : Location.t) ) ->
+        astate
+    | Assign (_, _, _) ->
+        astate
+    | Assume (_, _, _, _) ->
+        astate
+    | Metadata _ ->
         astate
 
-
-  let pp_session_name (node : CFG.Node.t) (fmt : F.formatter) : unit =
-    F.fprintf fmt "AtomicSets: %a" CFG.Node.pp_id (CFG.Node.id node)
+    let pp_session_name (node : CFG.Node.t) (fmt : F.formatter) : unit =
+      F.fprintf fmt "AtomicSets: %a" CFG.Node.pp_id (CFG.Node.id node)
 end
 
 (** An analyser definition. *)

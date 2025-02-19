@@ -77,9 +77,9 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
           in
           (* Update the abstract state with the function summary as well if it is possible. *)
           match analysis_data.analyze_dependency callee_pname with
-          | Some (summary : Domain.Summary.t) ->
+          | Ok (summary : Domain.Summary.t) ->
               Domain.apply_summary summary loc astate
-          | None ->
+          | Error _ ->
               astate ) )
     | _ ->
         astate

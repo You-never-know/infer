@@ -70,3 +70,7 @@ let to_checker payload_id : Checker.t =
       LineageShape
   | Starvation ->
       Starvation
+  | AtomicSets ->
+      AtomicSets
+  | AtomicityViolations ->
+      AtomicityViolations

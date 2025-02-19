@@ -508,25 +508,19 @@ let analyze_procedure ({InterproceduralAnalysis.proc_desc; tenv} as interproc) =
     let formals = FormalMap.make (Procdesc.get_attributes proc_desc) in
     let proc_data = {interproc; formals} in
     let loc = Procdesc.get_loc proc_desc in
-    let locks_for_synchronized_proc =
-      if Procdesc.is_java_synchronized proc_desc || Procdesc.is_csharp_synchronized proc_desc then
-        Domain.Lock.make_java_synchronized formals procname |> Option.to_list
-      else []
-    in
     let set_lock_state_for_synchronized_proc astate =
-      Domain.acquire ~tenv astate ~procname ~loc locks_for_synchronized_proc
-    in
-    let release_lock_state_for_synchronized_proc astate =
-      Domain.release astate locks_for_synchronized_proc
+      if Procdesc.is_java_synchronized proc_desc || Procdesc.is_csharp_synchronized proc_desc then
+        Domain.Lock.make_java_synchronized formals procname
+        |> Option.to_list
+        |> Domain.acquire ~tenv astate ~procname ~loc
+      else astate
     in
     let set_thread_status_by_annotation (astate : Domain.t) =
       let thread =
         if ConcurrencyModels.annotated_as_worker_thread tenv procname then
           Domain.ThreadDomain.BGThread
         else if ConcurrencyModels.runs_on_ui_thread tenv procname then Domain.ThreadDomain.UIThread
-        else
-          ConcurrencyModels.annotated_as_named_thread procname
-          |> Option.value_map ~f:(fun n -> Domain.ThreadDomain.NamedThread n) ~default:astate.thread
+        else astate.thread
       in
       {astate with thread}
     in
@@ -543,7 +537,6 @@ let analyze_procedure ({InterproceduralAnalysis.proc_desc; tenv} as interproc) =
       |> set_ignore_blocking_calls_flag
     in
     Analyzer.compute_post proc_data ~initial proc_desc
-    |> Option.map ~f:release_lock_state_for_synchronized_proc
     |> Option.map ~f:(Domain.summary_of_astate proc_desc)
 
 
