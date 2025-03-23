@@ -1,0 +1,3 @@
+AllowedClasses::test: {AllowedClasses::h, std::vector<int,std::allocator<int>>::clear, std::vector<int,std::allocator<int>>::push_back}
+
+# Number of (analysed functions; atomic sets; atomic functions): (1; 1; 3)
