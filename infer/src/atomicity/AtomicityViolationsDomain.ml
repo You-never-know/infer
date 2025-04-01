@@ -358,16 +358,37 @@ module Summary = struct
   type violation_count = Violations.violation * int
   [@@deriving compare, equal, show]
 
+  let equal_pairs (p1a, p1b) (p2a, p2b) : bool =
+    let comparison1 = String.equal p1a p2a in
+    let comparison2 = String.equal p1b p2b in
+    let comparison3 = String.equal p1a p2b in
+    let comparison4 = String.equal p1b p2a in
+  (comparison1 && comparison2) || (comparison3 && comparison4)
+
+  let equal_violation_count (v1 : violation_count) (v2 : violation_count) : bool =
+      let (violation1, count1) = v1 in
+      let (violation2, count2) = v2 in
+      (* First, compare by violation *)
+      let cmp_violation = equal_pairs violation1.pair violation2.pair in
+      cmp_violation
+
+  let compare_violation_count (v1 : violation_count) (v2 : violation_count) : int =
+      let (violation1, count1) = v1 in
+      let (violation2, count2) = v2 in
+      (* First, compare by violation *)
+      if equal_violation_count v1 v2 then 0
+      else Int.compare count1 count2
+
   module ViolationCountOrd = struct
       type t = violation_count
+      let equal = equal_violation_count
       let compare = compare_violation_count
 
       let pp fmt (v, count) =
         Format.fprintf fmt "%a (count: %d)" Violations.pp_violation v count
   end
 
-module ViolationCountSet = MakePPSet(ViolationCountOrd)
-
+  module ViolationCountSet = MakePPSet(ViolationCountOrd)
 
   type violation_count_set = ViolationCountSet.t
 
@@ -386,12 +407,12 @@ module ViolationCountSet = MakePPSet(ViolationCountOrd)
     TSet.iter iterator astate ;
     {first_calls= !first_calls; last_calls= !last_calls; violations= !s_violations; calls= !s_calls}
 
+
   let is_top_level_fun (pname : Procname.t) : (Procname.t * t) list -> bool =
     List.for_all ~f:(fun ((pname' : Procname.t), ({calls} : t)) : bool ->
         Procname.equal pname' pname || not (CallSet.mem (Procname.to_string pname) calls) )
 
-
-  let add_to_violation_count_set (set : violation_count_set) (violation : Violations.violation) =
+  let add_to_violation_count_set (violation : Violations.violation) (set : violation_count_set) : violation_count_set =
     (* Check if violation already exists in set *)
     match ViolationCountSet.find_opt (violation, 0) set with
     | Some (v, count) ->
@@ -400,14 +421,15 @@ module ViolationCountSet = MakePPSet(ViolationCountOrd)
     | None ->
         ViolationCountSet.add (violation, 1) set
 
+(*TODO*)
   let count_violations (summaries : (Procname.t * t) list) : violation_count_set =
-      List.fold_left
-        (fun acc (_, summary) ->
-          (* Extract violations from the summary *)
-          List.fold_left
-            ~f:(fun (violation, _location, _severity) acc -> add_to_violation_count_set acc violation)
-            summary.violations acc)
-        ViolationCountSet.empty summaries
+  List.fold_left
+    ~f:(fun acc (_, summary) -> (* `violations` is of type Violations.t *)
+      acc
+      )
+    ~init:ViolationCountSet.empty
+    summaries
+
 
 
   let filter_summaries summaries = summaries
