@@ -38,6 +38,12 @@ module Violations : sig
     | Error  (** ERROR severity - used for real (global) atomicity violations. *)
   [@@deriving compare, equal]
 
+  type violation =
+    {pair: calls_pair; loc: (Location.t[@printer Location.pp_file_pos]); severity: severity}
+  [@@deriving compare, equal, show]
+
+  val pp_violation : Format.formatter -> violation -> unit
+
   val empty : t
   (** Creates an empty module. *)
 
@@ -66,6 +72,10 @@ end = struct
   type violation =
     {pair: calls_pair; loc: (Location.t[@printer Location.pp_file_pos]); severity: severity}
   [@@deriving compare, equal, show {with_path= false}]
+
+  let pp_violation fmt {pair; loc; severity} =
+  Format.fprintf fmt "{pair: %a, loc: %a, severity: %a}"
+    pp_calls_pair pair Location.pp loc pp_severity severity
 
   (** A set of atomicity violations to be reported. *)
   module ViolationSet = MakePPSet (struct
@@ -345,6 +355,22 @@ module Summary = struct
     {first_calls: CallSet.t; last_calls: CallSet.t; violations: Violations.t; calls: CallSet.t}
   [@@deriving compare, equal, show {with_path= false}]
 
+  type violation_count = Violations.violation * int
+  [@@deriving compare, equal, show]
+
+  module ViolationCountOrd = struct
+      type t = violation_count
+      let compare = compare_violation_count
+
+      let pp fmt (v, count) =
+        Format.fprintf fmt "%a (count: %d)" Violations.pp_violation v count
+  end
+
+module ViolationCountSet = MakePPSet(ViolationCountOrd)
+
+
+  type violation_count_set = ViolationCountSet.t
+
   let create (astate : astate) : t =
     let first_calls : CallSet.t ref = ref CallSet.empty
     and last_calls : CallSet.t ref = ref CallSet.empty
@@ -360,11 +386,31 @@ module Summary = struct
     TSet.iter iterator astate ;
     {first_calls= !first_calls; last_calls= !last_calls; violations= !s_violations; calls= !s_calls}
 
-
   let is_top_level_fun (pname : Procname.t) : (Procname.t * t) list -> bool =
     List.for_all ~f:(fun ((pname' : Procname.t), ({calls} : t)) : bool ->
         Procname.equal pname' pname || not (CallSet.mem (Procname.to_string pname) calls) )
 
+
+  let add_to_violation_count_set (set : violation_count_set) (violation : Violations.violation) =
+    (* Check if violation already exists in set *)
+    match ViolationCountSet.find_opt (violation, 0) set with
+    | Some (v, count) ->
+        let updated_set = ViolationCountSet.remove (v, count) set in
+        ViolationCountSet.add (v, count + 1) updated_set
+    | None ->
+        ViolationCountSet.add (violation, 1) set
+
+  let count_violations (summaries : (Procname.t * t) list) : violation_count_set =
+      List.fold_left
+        (fun acc (_, summary) ->
+          (* Extract violations from the summary *)
+          List.fold_left
+            ~f:(fun (violation, _location, _severity) acc -> add_to_violation_count_set acc violation)
+            summary.violations acc)
+        ViolationCountSet.empty summaries
+
+
+  let filter_summaries summaries = summaries
 
   let report_atomicity_violations
       ~(f : Location.t -> msg:string -> IssueType.t -> IssueLog.t -> IssueLog.t) ({violations} : t)

@@ -47,6 +47,8 @@ module Summary : sig
   (** Determines whether a given function is a top-level function (using a list of all analysed
       functions with their summaries). *)
 
+  val filter_summaries : ((Procname.t * t) list) -> ((Procname.t * t) list)
+
   val report_atomicity_violations :
        f:(Location.t -> msg:string -> IssueType.t -> IssueLog.t -> IssueLog.t)
     -> t

@@ -120,6 +120,12 @@ let analyse_procedure ({proc_desc} as analysis_data : Domain.Summary.t Interproc
 let report_atomicity_violations (analysis_data : Domain.Summary.t InterproceduralAnalysis.file_t) :
     IssueLog.t =
   let summaries : (Procname.t * Domain.Summary.t) list = file_summaries analysis_data in
+    (* Define a filtering condition for the summaries *)
+  let filter_summaries (summaries : (Procname.t * Domain.Summary.t) list) : (Procname.t * Domain.Summary.t) list =
+    Domain.Summary.filter_summaries summaries
+  in
+  (* Now filter the summaries before proceeding *)
+  let filtered_summaries = filter_summaries summaries in
   let fold (issue_log : IssueLog.t) ((pname : Procname.t), (summary : Domain.Summary.t)) :
       IssueLog.t =
     if not (Domain.Summary.is_top_level_fun pname summaries) then issue_log
@@ -133,4 +139,4 @@ let report_atomicity_violations (analysis_data : Domain.Summary.t Interprocedura
       in
       Domain.Summary.report_atomicity_violations summary issue_log ~f:report
   in
-  List.fold summaries ~init:IssueLog.empty ~f:fold
+  List.fold filtered_summaries ~init:IssueLog.empty ~f:fold
