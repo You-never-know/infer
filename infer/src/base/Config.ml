@@ -3707,6 +3707,13 @@ and atomic_sets_functions_depth_limit : int ref =
     "Specify the maximum depth in the hierarchy of function calls to which function calls will be \
      considered during the 'atomic-sets' checker analysis. A default value is '10'."
 
+and atomicity_violation_min_limit_to_print : int ref =
+    CLOpt.mk_int ~default:1 ~long:"atomicity_violation_min_limit_to_print"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify the minimum amount any atomicity violation needs to occur (per file) to be printed as a result. This can \
+     be handy, when you have lot of false positives, as you can say, that the violation needs to occur at least twice \
+     to be printed at the end of the analysis. A default value is '1'."
+
 
 and atomic_sets_ignore_single_atomic_calls : bool ref =
   CLOpt.mk_bool ~default:false ~long:"atomic-sets-ignore-single-atomic-calls"
@@ -5056,6 +5063,8 @@ and atomic_sets_locked_functions_limit : int = !atomic_sets_locked_functions_lim
 and atomic_sets_file_append : bool = !atomic_sets_file_append
 
 and atomic_sets_functions_depth_limit : int = !atomic_sets_functions_depth_limit
+
+and atomicity_violation_min_limit_to_print : int = !atomicity_violation_min_limit_to_print
 
 and atomic_sets_ignore_single_atomic_calls : bool = !atomic_sets_ignore_single_atomic_calls
 

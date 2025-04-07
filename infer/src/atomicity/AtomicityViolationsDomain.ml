@@ -38,12 +38,6 @@ module Violations : sig
     | Error  (** ERROR severity - used for real (global) atomicity violations. *)
   [@@deriving compare, equal]
 
-  type violation =
-    {pair: calls_pair; loc: (Location.t[@printer Location.pp_file_pos]); severity: severity}
-  [@@deriving compare, equal, show]
-
-  val pp_violation : Format.formatter -> violation -> unit
-
   val empty : t
   (** Creates an empty module. *)
 
@@ -73,10 +67,6 @@ end = struct
     {pair: calls_pair; loc: (Location.t[@printer Location.pp_file_pos]); severity: severity}
   [@@deriving compare, equal, show {with_path= false}]
 
-  let pp_violation fmt {pair; loc; severity} =
-  Format.fprintf fmt "{pair: %a, loc: %a, severity: %a}"
-    pp_calls_pair pair Location.pp loc pp_severity severity
-
   (** A set of atomicity violations to be reported. *)
   module ViolationSet = MakePPSet (struct
     type t = violation [@@deriving compare, equal, show {with_path= false}]
@@ -91,13 +81,11 @@ end = struct
   let add (pair : calls_pair) (loc : Location.t) : t -> t =
     ViolationSet.add {pair; loc; severity= Error}
 
-
   let union : t -> t -> t = ViolationSet.union
 
   let fold ~(f : calls_pair * Location.t * severity -> 'a -> 'a) : t -> 'a -> 'a =
     ViolationSet.fold (fun ({pair; loc; severity} : violation) : ('a -> 'a) ->
         f (pair, loc, severity) )
-
 
   let make_all_warnings : t -> t =
     ViolationSet.map (fun (violation : violation) : violation -> {violation with severity= Warning})
@@ -355,7 +343,7 @@ module Summary = struct
     {first_calls: CallSet.t; last_calls: CallSet.t; violations: Violations.t; calls: CallSet.t}
   [@@deriving compare, equal, show {with_path= false}]
 
-  type violation_count = Violations.violation * int
+  type violation_count = calls_pair * int
   [@@deriving compare, equal, show]
 
   let equal_pairs (p1a, p1b) (p2a, p2b) : bool =
@@ -363,34 +351,58 @@ module Summary = struct
     let comparison2 = String.equal p1b p2b in
     let comparison3 = String.equal p1a p2b in
     let comparison4 = String.equal p1b p2a in
-  (comparison1 && comparison2) || (comparison3 && comparison4)
+    (comparison1 && comparison2) || (comparison3 && comparison4)
 
-  let equal_violation_count (v1 : violation_count) (v2 : violation_count) : bool =
-      let (violation1, count1) = v1 in
-      let (violation2, count2) = v2 in
-      (* First, compare by violation *)
-      let cmp_violation = equal_pairs violation1.pair violation2.pair in
-      cmp_violation
+    let equal_violation_count (v1 : violation_count) (v2 : violation_count) : bool =
+        let (pair1, _) = v1 in
+        let (pair2, _) = v2 in
+        (* Only compare the pair, count doesn't matter for equality *)
+        equal_pairs pair1 pair2
 
-  let compare_violation_count (v1 : violation_count) (v2 : violation_count) : int =
-      let (violation1, count1) = v1 in
-      let (violation2, count2) = v2 in
-      (* First, compare by violation *)
-      if equal_violation_count v1 v2 then 0
-      else Int.compare count1 count2
+    let compare_violation_count (v1 : violation_count) (v2 : violation_count) : int =
+      let (pair1, count1) = v1 in
+      let (pair2, count2) = v2 in
+      (* First compare by the violation pair *)
+      let cmp_pairs =
+        if equal_pairs pair1 pair2 then 0
+        else
+          (* If pairs are not equal, determine the comparison result based on their lexicographic ordering *)
+          String.compare (fst pair1) (fst pair2)
+      in
+      if Int.equal cmp_pairs 0 then
+        (* If pairs are equal, compare by count *)
+        Int.compare count1 count2
+      else
+        cmp_pairs
 
-  module ViolationCountOrd = struct
+   module ViolationCountOrd = struct
       type t = violation_count
       let equal = equal_violation_count
       let compare = compare_violation_count
 
-      let pp fmt (v, count) =
-        Format.fprintf fmt "%a (count: %d)" Violations.pp_violation v count
-  end
+      let pp fmt (pair, count) =
+        Format.fprintf fmt "%a (count: %d)" pp_calls_pair pair count
+    end
 
-  module ViolationCountSet = MakePPSet(ViolationCountOrd)
+    (* Define the ViolationCountSet after ViolationCountOrd is defined *)
+    module ViolationCountSet = MakePPSet(ViolationCountOrd)
 
-  type violation_count_set = ViolationCountSet.t
+    type violation_count_set = ViolationCountSet.t
+
+    (* Now you can define find_pair after the module is initialized *)
+    let find_pair (pair : calls_pair) (set : violation_count_set) : int option =
+      let result = ViolationCountSet.fold
+        (fun (existing_pair, count) acc ->
+          if equal_pairs existing_pair pair then
+            Some count  (* If the pair matches, return the count *)
+          else
+            acc         (* Otherwise, continue searching *)
+        )
+        set
+        None  (* Initial accumulator is None, which means no pair found *)
+      in
+      result
+
 
   let create (astate : astate) : t =
     let first_calls : CallSet.t ref = ref CallSet.empty
@@ -412,27 +424,58 @@ module Summary = struct
     List.for_all ~f:(fun ((pname' : Procname.t), ({calls} : t)) : bool ->
         Procname.equal pname' pname || not (CallSet.mem (Procname.to_string pname) calls) )
 
-  let add_to_violation_count_set (violation : Violations.violation) (set : violation_count_set) : violation_count_set =
-    (* Check if violation already exists in set *)
-    match ViolationCountSet.find_opt (violation, 0) set with
-    | Some (v, count) ->
-        let updated_set = ViolationCountSet.remove (v, count) set in
-        ViolationCountSet.add (v, count + 1) updated_set
-    | None ->
-        ViolationCountSet.add (violation, 1) set
 
-(*TODO*)
+  let iterate_over_violations_in_summary (summary : t) (violationCountSet : violation_count_set) : violation_count_set =
+      let {first_calls; last_calls; violations; calls} = summary in
+      Violations.fold
+        ~f:(fun (pair, _loc, _severity) acc ->
+          (* Only count by the pair, disregarding loc and severity *)
+          match find_pair pair acc with
+          | Some count ->
+              let updated_set = ViolationCountSet.remove (pair, count) acc in
+              ViolationCountSet.add (pair, count + 1) updated_set
+          | None ->
+              ViolationCountSet.add (pair, 1) acc
+        )
+        violations
+        violationCountSet
+
+
   let count_violations (summaries : (Procname.t * t) list) : violation_count_set =
   List.fold_left
-    ~f:(fun acc (_, summary) -> (* `violations` is of type Violations.t *)
-      acc
-      )
+    ~f:(fun acc (_, summary) ->
+      iterate_over_violations_in_summary summary acc
+    )
     ~init:ViolationCountSet.empty
     summaries
 
 
+  let filter_summary (violationCountSet : violation_count_set) (summary : Procname.t * t) : Procname.t * t =
+  let proc, {first_calls; last_calls; violations; calls} = summary in
+  let new_violations =
+    Violations.fold
+      ~f:(fun (pair, loc, severity) acc ->
+        match find_pair pair violationCountSet with
+        | Some count when count >= Config.atomicity_violation_min_limit_to_print ->
+            Violations.add pair loc acc
+        | _ -> acc)
+      violations
+      Violations.empty
+  in
+  (proc, {first_calls; last_calls; violations = new_violations; calls})
 
-  let filter_summaries summaries = summaries
+
+  let filter_summaries (summaries : (Procname.t * t) list) =
+  if Config.atomicity_violation_min_limit_to_print <= 1 then
+    summaries
+  else
+    let violation_counts = count_violations summaries in
+    Format.printf "@[<v>Violation counts:@ %a@]@." ViolationCountSet.pp violation_counts;
+    Format.print_flush ();
+    List.map summaries ~f:(fun summary ->
+      filter_summary violation_counts summary
+    )
+
 
   let report_atomicity_violations
       ~(f : Location.t -> msg:string -> IssueType.t -> IssueLog.t -> IssueLog.t) ({violations} : t)

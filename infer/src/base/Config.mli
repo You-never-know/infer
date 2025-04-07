@@ -961,6 +961,8 @@ val atomic_sets_file_append : bool
 
 val atomic_sets_functions_depth_limit : int
 
+val atomicity_violation_min_limit_to_print : int
+
 val atomic_sets_ignore_single_atomic_calls : bool
 
 val atomicity_violations_widen_limit : int
