@@ -442,39 +442,40 @@ module Summary = struct
 
 
   let count_violations (summaries : (Procname.t * t) list) : violation_count_set =
-  List.fold_left
-    ~f:(fun acc (_, summary) ->
-      iterate_over_violations_in_summary summary acc
-    )
-    ~init:ViolationCountSet.empty
-    summaries
+      List.fold_left
+        ~f:(fun acc (proc, summary) ->
+            if not (is_top_level_fun proc summaries) then acc
+            else iterate_over_violations_in_summary summary acc
+        )
+        ~init:ViolationCountSet.empty
+        summaries
 
 
   let filter_summary (violationCountSet : violation_count_set) (summary : Procname.t * t) : Procname.t * t =
-  let proc, {first_calls; last_calls; violations; calls} = summary in
-  let new_violations =
-    Violations.fold
-      ~f:(fun (pair, loc, severity) acc ->
-        match find_pair pair violationCountSet with
-        | Some count when count >= Config.atomicity_violation_min_limit_to_print ->
-            Violations.add pair loc acc
-        | _ -> acc)
-      violations
-      Violations.empty
-  in
-  (proc, {first_calls; last_calls; violations = new_violations; calls})
+      let proc, {first_calls; last_calls; violations; calls} = summary in
+      let new_violations =
+        Violations.fold
+          ~f:(fun (pair, loc, severity) acc ->
+            match find_pair pair violationCountSet with
+            | Some count when count >= Config.atomicity_violation_min_limit_to_print ->
+                Violations.add pair loc acc
+            | _ -> acc)
+          violations
+          Violations.empty
+      in
+      (proc, {first_calls; last_calls; violations = new_violations; calls})
 
 
   let filter_summaries (summaries : (Procname.t * t) list) =
-  if Config.atomicity_violation_min_limit_to_print <= 1 then
-    summaries
-  else
-    let violation_counts = count_violations summaries in
-    Format.printf "@[<v>Violation counts:@ %a@]@." ViolationCountSet.pp violation_counts;
-    Format.print_flush ();
-    List.map summaries ~f:(fun summary ->
-      filter_summary violation_counts summary
-    )
+      if Config.atomicity_violation_min_limit_to_print <= 1 then
+        summaries
+      else
+        let violation_counts = count_violations summaries in
+        Format.printf "@[<v>Violation counts:@ %a@]@." ViolationCountSet.pp violation_counts;
+        Format.print_flush ();
+        List.map summaries ~f:(fun summary ->
+          filter_summary violation_counts summary
+        )
 
 
   let report_atomicity_violations

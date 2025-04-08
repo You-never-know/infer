@@ -110,10 +110,10 @@ for dir in "$(dirname "$0")"/*/; do
       "$(diff -q <(jsort infer-out/report.json) <(jsort report.json))" \
     ]]; then
       echo
-      #diff -u <(jsort infer-out/report.json) <(jsort report.json)
-      jsort infer-out/report.json > ./infer.out
-      jsort report.json > ./expected.out
-      #fail "In '$dir', 'infer-out/report.json' and 'report.json' differ."
+      diff -u <(jsort infer-out/report.json) <(jsort report.json)
+      #jsort infer-out/report.json > ./infer.out
+      #jsort report.json > ./expected.out
+      fail "In '$dir', 'infer-out/report.json' and 'report.json' differ."
     fi
   fi
 
