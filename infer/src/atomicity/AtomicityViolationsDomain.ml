@@ -471,8 +471,8 @@ module Summary = struct
         summaries
       else
         let violation_counts = count_violations summaries in
-        Format.printf "@[<v>Violation counts:@ %a@]@." ViolationCountSet.pp violation_counts;
-        Format.print_flush ();
+        (*Format.printf "@[<v>Violation counts:@ %a@]@." ViolationCountSet.pp violation_counts;
+        Format.print_flush ();*)
         List.map summaries ~f:(fun summary ->
           filter_summary violation_counts summary
         )
