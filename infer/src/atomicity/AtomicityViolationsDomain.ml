@@ -217,7 +217,7 @@ let initial : t =
     ; guards= Guards.empty
     ; calls= CallSet.empty }
 
-
+(* ToDO Add a new field to summary and here add the atomic calls which go fine*)
 let apply_call ~(f_name : string) (loc : Location.t) : t -> t =
   let mapper (astate_el : t_element) : t_element =
     let calls_pair_push : calls_pair -> string -> calls_pair = Fn.compose Tuple2.create snd in
@@ -353,12 +353,6 @@ module Summary = struct
     let comparison4 = String.equal p1b p2a in
     (comparison1 && comparison2) || (comparison3 && comparison4)
 
-    let equal_violation_count (v1 : violation_count) (v2 : violation_count) : bool =
-        let (pair1, _) = v1 in
-        let (pair2, _) = v2 in
-        (* Only compare the pair, count doesn't matter for equality *)
-        equal_pairs pair1 pair2
-
     let compare_violation_count (v1 : violation_count) (v2 : violation_count) : int =
       let (pair1, count1) = v1 in
       let (pair2, count2) = v2 in
@@ -377,7 +371,6 @@ module Summary = struct
 
    module ViolationCountOrd = struct
       type t = violation_count
-      let equal = equal_violation_count
       let compare = compare_violation_count
 
       let pp fmt (pair, count) =
@@ -426,7 +419,7 @@ module Summary = struct
 
 
   let iterate_over_violations_in_summary (summary : t) (violationCountSet : violation_count_set) : violation_count_set =
-      let {first_calls; last_calls; violations; calls} = summary in
+      let {violations} = summary in
       Violations.fold
         ~f:(fun (pair, _loc, _severity) acc ->
           (* Only count by the pair, disregarding loc and severity *)
@@ -455,7 +448,7 @@ module Summary = struct
       let proc, {first_calls; last_calls; violations; calls} = summary in
       let new_violations =
         Violations.fold
-          ~f:(fun (pair, loc, severity) acc ->
+          ~f:(fun (pair, loc, _) acc ->
             match find_pair pair violationCountSet with
             | Some count when count >= Config.atomicity_violation_min_limit_to_print ->
                 Violations.add pair loc acc
