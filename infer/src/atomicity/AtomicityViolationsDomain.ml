@@ -501,7 +501,7 @@ module Summary = struct
         summaries
 
 
- let filter_summary (violationCountSet : violation_count_set) (summary : Procname.t * t) : Procname.t * t =
+ let filter_summary_hard_limit (violationCountSet : violation_count_set) (summary : Procname.t * t) : Procname.t * t =
   let proc, state = summary in
   (* Print out the full state of the summary *)
 (* Format.printf "@[<v>Summary for procedure: %a@]@." Procname.pp proc; *)
@@ -521,16 +521,28 @@ module Summary = struct
   in
   (proc, {state with violations = new_violations})
 
+  let filter_summary_relative_limit (violationCountSet : violation_count_set) (summary : Procname.t * t) : Procname.t * t =
+    summary
+
   let filter_summaries (summaries : (Procname.t * t) list) =
-      if Config.atomicity_violation_min_limit_to_print <= 1 then
+      if Config.atomicity_violation_min_limit_to_print <= 1
+         && Config.atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print <= 0 then
         summaries
       else
         let violation_counts = count_violations summaries in
-        (*Format.printf "@[<v>Violation counts:@ %a@]@." ViolationCountSet.pp violation_counts;
-        Format.print_flush ();*)
-        List.map summaries ~f:(fun summary ->
-          filter_summary violation_counts summary
-        )
+        let summaries_after_hard_filter =
+          if Config.atomicity_violation_min_limit_to_print > 1 then
+            List.map summaries ~f:(filter_summary_hard_limit violation_counts)
+          else
+            summaries
+        in
+        let summaries_after_relative_filter =
+          if Config.atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print > 0 then
+            List.map summaries_after_hard_filter ~f:(filter_summary_relative_limit violation_counts)
+          else
+            summaries_after_hard_filter
+        in
+        summaries_after_relative_filter
 
   let report_atomicity_violations
       ~(f : Location.t -> msg:string -> IssueType.t -> IssueLog.t -> IssueLog.t) ({violations} : t)
