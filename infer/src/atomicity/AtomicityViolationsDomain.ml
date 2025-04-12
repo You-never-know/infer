@@ -21,9 +21,14 @@ end)
 type atomic_pair = calls_pair * Lock.t [@@deriving compare, equal, show {with_path= false}]
 
 (** A set of pairs of atomic function calls. *)
-module AtomicPairSet = MakePPSet (struct
-  type t = atomic_pair [@@deriving compare, equal, show {with_path= false}]
-end)
+module AtomicPairSet = struct
+  include MakePPSet (struct
+    type t = atomic_pair [@@deriving compare, equal, show {with_path= false}]
+  end)
+
+  let mem_pair (p : calls_pair) (s : t) : bool =
+    exists (fun ((p', _lock) : atomic_pair) -> Tuple2.equal ~eq1:String.equal ~eq2:String.equal p p') s
+end
 
 (** A set of function calls. *)
 module CallSet = MakePPSet (String)
@@ -193,7 +198,7 @@ type correct_usage_count = calls_pair * int
 module CorrectUsageCountOrd = struct
   type t = correct_usage_count
 
-  let equal (p1, _) (p2, _) = equal_pairs p1 p2
+  (*let equal (p1, _) (p2, _) = equal_pairs p1 p2 *)
 
   let compare (p1, _) (p2, _) =
     if equal_pairs p1 p2 then 0 else Stdlib.compare p1 p2
@@ -272,11 +277,13 @@ let apply_call ~(f_name : string) (loc : Location.t) : t -> t =
         astate_el.atomic_last_pairs
     and calls : CallSet.t = CallSet.add f_name astate_el.calls
     in
+
     (* Check last_pair for violation or correct usage *)
     if atomic_pairs#check_violating_atomicity_bool last_pair ~atomic_last_pairs ~check_first_empty:true then
       violations := Violations.add last_pair loc !violations
-    else
+    else if AtomicPairSet.mem_pair last_pair atomic_last_pairs then
       correct_usage_counts := add_to_correct_usage_set last_pair !correct_usage_counts ;
+
     let iterator (last_call : string) : unit =
       let p : calls_pair = (last_call, f_name) in
       let atomic_last_pairs : AtomicPairSet.t =
@@ -287,10 +294,12 @@ let apply_call ~(f_name : string) (loc : Location.t) : t -> t =
       in
       if atomic_pairs#check_violating_atomicity_bool p ~atomic_last_pairs ~check_first_empty:false then
         violations := Violations.add p loc !violations
-      else
+      else if AtomicPairSet.mem_pair p atomic_last_pairs then
         correct_usage_counts := add_to_correct_usage_set p !correct_usage_counts
     in
+
     CallSet.iter iterator astate_el.nested_last_calls ;
+
     { astate_el with
       first_call
     ; last_pair
@@ -494,6 +503,12 @@ module Summary = struct
 
  let filter_summary (violationCountSet : violation_count_set) (summary : Procname.t * t) : Procname.t * t =
   let proc, state = summary in
+  (* Print out the full state of the summary *)
+(* Format.printf "@[<v>Summary for procedure: %a@]@." Procname.pp proc; *)
+(* Format.printf "@[<v>Violations: %a@]@." Violations.pp state.violations; *)
+(* Format.printf "@[<v>Correct usage counts: %a@]@." CorrectUsageCountSet.pp state.correct_usage_counts; *)
+(* Format.printf "@[<v>Calls: %a@]@." CallSet.pp state.calls; *)
+(* Format.print_flush (); *)
   let new_violations =
     Violations.fold
       ~f:(fun (pair, loc, _) acc ->
@@ -516,7 +531,6 @@ module Summary = struct
         List.map summaries ~f:(fun summary ->
           filter_summary violation_counts summary
         )
-
 
   let report_atomicity_violations
       ~(f : Location.t -> msg:string -> IssueType.t -> IssueLog.t -> IssueLog.t) ({violations} : t)
@@ -568,7 +582,7 @@ let apply_summary ({first_calls; last_calls; violations = s_violations} : Summar
         in
         if is_violation then
           violations := Violations.add p loc !violations
-        else
+        else if AtomicPairSet.mem_pair p atomic_last_pairs_mapped then
           correct_usage_counts := add_to_correct_usage_set p !correct_usage_counts
       in
       CallSet.iter iterator first_calls ;
@@ -578,4 +592,5 @@ let apply_summary ({first_calls; last_calls; violations = s_violations} : Summar
       ; correct_usage_counts = !correct_usage_counts }
     in
     TSet.map mapper
+
 

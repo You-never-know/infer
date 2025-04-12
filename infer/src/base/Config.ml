@@ -3715,7 +3715,7 @@ and atomicity_violation_min_limit_to_print : int ref =
      to be printed at the end of the analysis. A default value is '1'."
 
 and atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print : int ref =
-    CLOpt.mk_int ~default:0 ~long:"atomicity_violation_min_percentage_of_atomicity_violations_for_pair_to_print"
+    CLOpt.mk_int ~default:0 ~long:"atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print"
     ~in_help:[(Analyze, manual_atomicity_violations)]
     "Specify the minimum percentage (rounded to the whole percent) of violations/correct_usage of atomic pairs \
     for them to be printed out. This allows you to specify that a violations of atomic pairs should be for example
