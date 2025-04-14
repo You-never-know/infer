@@ -546,25 +546,27 @@ let create (astate : astate) : t =
         ~init:ViolationCountSet.empty
         summaries
 
- let filter_summary_hard_limit (violationCountSet : violation_count_set) (summary : Procname.t * t) : Procname.t * t =
+ let filter_summary_hard_limit (violationCountSet : violation_count_set) (summaries : (Procname.t * t) list) (summary : Procname.t * t) : Procname.t * t =
   let proc, state = summary in
+  if not (is_top_level_fun proc summaries) then summary
+  else
   (* Print out the full state of the summary *)
 (* Format.printf "@[<v>Summary for procedure: %a@]@." Procname.pp proc; *)
 (* Format.printf "@[<v>Violations: %a@]@." Violations.pp state.violations; *)
 (* Format.printf "@[<v>Correct usage counts: %a@]@." CorrectUsageCountSet.pp state.correct_usage_counts; *)
 (* Format.printf "@[<v>Calls: %a@]@." CallSet.pp state.calls; *)
 (* Format.print_flush (); *)
-  let new_violations =
-    Violations.fold
-      ~f:(fun (pair, loc, _) acc ->
-        match violation_set_find_pair_and_get_count pair violationCountSet with
-        | Some count when count >= Config.atomicity_violation_min_limit_to_print ->
-            Violations.add pair loc acc
-        | _ -> acc)
-      state.violations
-      Violations.empty
-  in
-  (proc, {state with violations = new_violations})
+      let new_violations =
+        Violations.fold
+          ~f:(fun (pair, loc, _) acc ->
+            match violation_set_find_pair_and_get_count pair violationCountSet with
+            | Some count when count >= Config.atomicity_violation_min_limit_to_print ->
+                Violations.add pair loc acc
+            | _ -> acc)
+          state.violations
+          Violations.empty
+      in
+      (proc, {state with violations = new_violations})
 
 (* ************************************ Relative limit functions ************************************************* *)
 
@@ -610,27 +612,29 @@ let count_correct_usages (summaries : (Procname.t * t) list) : correct_usage_cou
                     violation_percentage >= min_percentage
 
   let filter_summary_relative_limit (violationCountSet : violation_count_set) (correctUsageSet : correct_usage_count_set)
-                                    (summary : Procname.t * t) : Procname.t * t =
+                                    (summaries : (Procname.t * t) list) (summary : Procname.t * t) : Procname.t * t =
     let proc, state = summary in
+    if not (is_top_level_fun proc summaries) then summary
+    else
 (*     Format.printf "@[<v>Summary for procedure: %a@]@." Procname.pp proc; *)
 (*     Format.printf "@[<v>Violations: %a@]@." Violations.pp state.violations; *)
 (*     Format.printf "@[<v>Correct atomic usage set: %a@]@." CorrectAtomicUsageSet.pp state.correct_usages; *)
 (*     Format.printf "@[<v>Calls: %a@]@." CallSet.pp state.calls; *)
 (*     Format.print_flush (); *)
-    let new_violations =
-      Violations.fold
-          ~f:(fun (pair, loc, _) acc ->
-            let violation_count = violation_set_find_pair_and_get_count pair violationCountSet in
-            let correct_usage_count = correct_usage_set_find_pair_and_get_count pair correctUsageSet in
-            if passed_relative_limit violation_count correct_usage_count then
-                Violations.add pair loc acc
-            else
-                acc
-          )
-          state.violations
-          Violations.empty
-    in
-    (proc, {state with violations = new_violations})
+        let new_violations =
+          Violations.fold
+              ~f:(fun (pair, loc, _) acc ->
+                let violation_count = violation_set_find_pair_and_get_count pair violationCountSet in
+                let correct_usage_count = correct_usage_set_find_pair_and_get_count pair correctUsageSet in
+                if passed_relative_limit violation_count correct_usage_count then
+                    Violations.add pair loc acc
+                else
+                    acc
+              )
+              state.violations
+              Violations.empty
+        in
+        (proc, {state with violations = new_violations})
 
   let filter_summaries (summaries : (Procname.t * t) list) =
       if Config.atomicity_violation_min_limit_to_print <= 1
@@ -640,14 +644,14 @@ let count_correct_usages (summaries : (Procname.t * t) list) : correct_usage_cou
         let violation_counts = count_violations summaries in
         let summaries_after_hard_filter =
           if Config.atomicity_violation_min_limit_to_print > 1 then
-            List.map summaries ~f:(filter_summary_hard_limit violation_counts)
+            List.map summaries ~f:(filter_summary_hard_limit violation_counts summaries)
           else
             summaries
         in
         let correct_usage_counts = count_correct_usages summaries in
         let summaries_after_relative_filter =
           if Config.atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print > 0 then
-            List.map summaries_after_hard_filter ~f:(filter_summary_relative_limit violation_counts correct_usage_counts)
+            List.map summaries_after_hard_filter ~f:(filter_summary_relative_limit violation_counts correct_usage_counts summaries)
           else
             summaries_after_hard_filter
         in
