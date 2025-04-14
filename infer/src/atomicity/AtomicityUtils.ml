@@ -117,6 +117,9 @@ module Guards = struct
     Fn.compose List.concat
       (List.map ~f:(fun (lock : AccessPath.t) : AccessPath.t list ->
            try GuardMap.find lock guards with Stdlib.Not_found -> [lock] ) )
+
+  let union (g1 : t) (g2 : t) : t =
+    GuardMap.union (fun _ v1 v2 -> Some (v1 @ v2)) g1 g2
 end
 
 (* ************************************ Constants *********************************************** *)

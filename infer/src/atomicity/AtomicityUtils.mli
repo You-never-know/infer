@@ -70,6 +70,9 @@ module Guards : sig
       lock, the access path remains unchanged. ii) If the access path in the list belongs to a lock
       guard, the access path is removed from the list, and all the access paths of this guard's
       locks are appended. *)
+
+   val union : t -> t -> t
+   (** Make union of two guard maps *)
 end
 
 (* ************************************ Constants *********************************************** *)
