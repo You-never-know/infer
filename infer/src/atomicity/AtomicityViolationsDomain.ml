@@ -562,9 +562,8 @@ let iterate_over_violations_in_summary (summary : t) (violationCountSet : violat
   let {violations} = summary in
   Violations.fold
     ~f:(fun (_proc, pair, _loc, _severity) acc ->
-      let before_set_str = Format.asprintf "%a" ViolationCountSet.pp acc in
-      let pair_str = Format.asprintf "%a" pp_calls_pair pair in
-
+(*      let before_set_str = Format.asprintf "%a" ViolationCountSet.pp acc in *)
+(*      let pair_str = Format.asprintf "%a" pp_calls_pair pair in *)
       match violation_set_find_pair_and_get_count pair acc with
       | Some count ->
           let updated_set = violation_set_remove_pair pair acc in

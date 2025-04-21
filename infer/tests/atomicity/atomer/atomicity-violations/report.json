@@ -1,752 +1,752 @@
 [
-    {
-        "bug_type": "ATOMICITY_VIOLATION_WARNING",
-        "qualifier": "Atomicity Violation within a Current Function! - Functions 'f3' and 'f1' should be called atomically.",
-        "severity": "WARNING",
-        "line": 16,
-        "column": 23,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 16,
-                "column_number": 23,
-                "description": "Atomicity Violation within a Current Function! - Functions 'f3' and 'f1' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_WARNING",
-        "hash": "e37383d7f408fd866049622d0c33241a",
-        "bug_type_hum": "Atomicity Violation within a Function",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f3' and 'f1' should be called atomically.",
-        "severity": "ERROR",
-        "line": 16,
-        "column": 23,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 16,
-                "column_number": 23,
-                "description": "Atomicity Violation! - Functions 'f3' and 'f1' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "04a1ca92ad96bdb3c09e9363f76623d4",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_WARNING",
-        "qualifier": "Atomicity Violation within a Current Function! - Functions 'f1' and 'f4' should be called atomically.",
-        "severity": "WARNING",
-        "line": 16,
-        "column": 29,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 16,
-                "column_number": 29,
-                "description": "Atomicity Violation within a Current Function! - Functions 'f1' and 'f4' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_WARNING",
-        "hash": "babb5484d492f18e2c6fb07d3ab3fb69",
-        "bug_type_hum": "Atomicity Violation within a Function",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f1' and 'f4' should be called atomically.",
-        "severity": "ERROR",
-        "line": 16,
-        "column": 29,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 16,
-                "column_number": 29,
-                "description": "Atomicity Violation! - Functions 'f1' and 'f4' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "61dcb089d9f2de31a1b236f8cf128c3a",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically.",
-        "severity": "ERROR",
-        "line": 47,
-        "column": 8,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 47,
-                "column_number": 8,
-                "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "3770d281da7fd8c89b9b3db6391ea60a",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically.",
-        "severity": "ERROR",
-        "line": 51,
-        "column": 14,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 51,
-                "column_number": 14,
-                "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "3770d281da7fd8c89b9b3db6391ea60a",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically.",
-        "severity": "ERROR",
-        "line": 53,
-        "column": 8,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 53,
-                "column_number": 8,
-                "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "3770d281da7fd8c89b9b3db6391ea60a",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f2' and 'f3' should be called atomically.",
-        "severity": "ERROR",
-        "line": 53,
-        "column": 14,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 53,
-                "column_number": 14,
-                "description": "Atomicity Violation! - Functions 'f2' and 'f3' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "f1aa0f4eae65f9eeba0068d0c9b6ad7f",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically.",
-        "severity": "ERROR",
-        "line": 61,
-        "column": 8,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 61,
-                "column_number": 8,
-                "description": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "2c45fc89f3f7c0aeb5e8fdab31870c8b",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f2' and 'f4' should be called atomically.",
-        "severity": "ERROR",
-        "line": 63,
-        "column": 8,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 63,
-                "column_number": 8,
-                "description": "Atomicity Violation! - Functions 'f2' and 'f4' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "bbcac2d2f17869929723ab0f8d7c89ab",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically.",
-        "severity": "ERROR",
-        "line": 68,
-        "column": 2,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 68,
-                "column_number": 2,
-                "description": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "2c45fc89f3f7c0aeb5e8fdab31870c8b",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f3' and 'f4' should be called atomically.",
-        "severity": "ERROR",
-        "line": 71,
-        "column": 8,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 71,
-                "column_number": 8,
-                "description": "Atomicity Violation! - Functions 'f3' and 'f4' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "a61c0df6c576bcb6b722cd912adce423",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically.",
-        "severity": "ERROR",
-        "line": 84,
-        "column": 8,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 84,
-                "column_number": 8,
-                "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "3770d281da7fd8c89b9b3db6391ea60a",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f2' and 'f1' should be called atomically.",
-        "severity": "ERROR",
-        "line": 95,
-        "column": 3,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 95,
-                "column_number": 3,
-                "description": "Atomicity Violation! - Functions 'f2' and 'f1' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "36dcab615fe67282c0770feda81b95d0",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically.",
-        "severity": "ERROR",
-        "line": 95,
-        "column": 9,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 95,
-                "column_number": 9,
-                "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "3770d281da7fd8c89b9b3db6391ea60a",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f2' and 'f1' should be called atomically.",
-        "severity": "ERROR",
-        "line": 98,
-        "column": 2,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 98,
-                "column_number": 2,
-                "description": "Atomicity Violation! - Functions 'f2' and 'f1' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "36dcab615fe67282c0770feda81b95d0",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically.",
-        "severity": "ERROR",
-        "line": 99,
-        "column": 16,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 99,
-                "column_number": 16,
-                "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "3770d281da7fd8c89b9b3db6391ea60a",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f1' and 'f3' should be called atomically.",
-        "severity": "ERROR",
-        "line": 100,
-        "column": 2,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 100,
-                "column_number": 2,
-                "description": "Atomicity Violation! - Functions 'f1' and 'f3' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "acb478bb61ab83bce40cc4cce6798441",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f2' and 'f3' should be called atomically.",
-        "severity": "ERROR",
-        "line": 100,
-        "column": 2,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 100,
-                "column_number": 2,
-                "description": "Atomicity Violation! - Functions 'f2' and 'f3' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "f1aa0f4eae65f9eeba0068d0c9b6ad7f",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f3' and 'f1' should be called atomically.",
-        "severity": "ERROR",
-        "line": 102,
-        "column": 16,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 102,
-                "column_number": 16,
-                "description": "Atomicity Violation! - Functions 'f3' and 'f1' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "04a1ca92ad96bdb3c09e9363f76623d4",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f1' and 'f3' should be called atomically.",
-        "severity": "ERROR",
-        "line": 102,
-        "column": 22,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 102,
-                "column_number": 22,
-                "description": "Atomicity Violation! - Functions 'f1' and 'f3' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "acb478bb61ab83bce40cc4cce6798441",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically.",
-        "severity": "ERROR",
-        "line": 121,
-        "column": 13,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 121,
-                "column_number": 13,
-                "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "3770d281da7fd8c89b9b3db6391ea60a",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f1' and 'f3' should be called atomically.",
-        "severity": "ERROR",
-        "line": 122,
-        "column": 7,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 122,
-                "column_number": 7,
-                "description": "Atomicity Violation! - Functions 'f1' and 'f3' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "acb478bb61ab83bce40cc4cce6798441",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f2' and 'f3' should be called atomically.",
-        "severity": "ERROR",
-        "line": 123,
-        "column": 2,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 123,
-                "column_number": 2,
-                "description": "Atomicity Violation! - Functions 'f2' and 'f3' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "f1aa0f4eae65f9eeba0068d0c9b6ad7f",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically.",
-        "severity": "ERROR",
-        "line": 129,
-        "column": 18,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 129,
-                "column_number": 18,
-                "description": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "2c45fc89f3f7c0aeb5e8fdab31870c8b",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically.",
-        "severity": "ERROR",
-        "line": 130,
-        "column": 2,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 130,
-                "column_number": 2,
-                "description": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "2c45fc89f3f7c0aeb5e8fdab31870c8b",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f4' and 'ff' should be called atomically.",
-        "severity": "ERROR",
-        "line": 140,
-        "column": 2,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 140,
-                "column_number": 2,
-                "description": "Atomicity Violation! - Functions 'f4' and 'ff' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "f8e5925669ea453e6e666c8693b7b36d",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'ff' and 'f3' should be called atomically.",
-        "severity": "ERROR",
-        "line": 140,
-        "column": 2,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 140,
-                "column_number": 2,
-                "description": "Atomicity Violation! - Functions 'ff' and 'f3' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "73ca744e329d7092e526979c5c989c2e",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'ff' and 'f3' should be called atomically.",
-        "severity": "ERROR",
-        "line": 144,
-        "column": 2,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 144,
-                "column_number": 2,
-                "description": "Atomicity Violation! - Functions 'ff' and 'f3' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "73ca744e329d7092e526979c5c989c2e",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    },
-    {
-        "bug_type": "ATOMICITY_VIOLATION_ERROR",
-        "qualifier": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically.",
-        "severity": "ERROR",
-        "line": 144,
-        "column": 8,
-        "procedure": "main",
-        "procedure_start_line": 0,
-        "file": "main.c",
-        "bug_trace": [
-            {
-                "level": 0,
-                "filename": "main.c",
-                "line_number": 144,
-                "column_number": 8,
-                "description": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically."
-            }
-        ],
-        "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
-        "hash": "2c45fc89f3f7c0aeb5e8fdab31870c8b",
-        "bug_type_hum": "Atomicity Violation",
-        "bug_trace_length": 1,
-        "bug_trace_max_depth": 0,
-        "category": "Concurrency"
-    }
+  {
+    "bug_trace": [
+      {
+        "column_number": 2,
+        "description": "Atomicity Violation! - Functions 'f1' and 'f3' should be called atomically. (originated in function: 'test_iteration')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 100
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 2,
+    "file": "main.c",
+    "hash": "ea85533a8bcf4290ec6ec6cff1c55997",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 100,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f1' and 'f3' should be called atomically. (originated in function: 'test_iteration').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 2,
+        "description": "Atomicity Violation! - Functions 'f2' and 'f1' should be called atomically. (originated in function: 'test_iteration')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 98
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 2,
+    "file": "main.c",
+    "hash": "b1b4be951b51df0bd83b8ac2856ec8a1",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 98,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f2' and 'f1' should be called atomically. (originated in function: 'test_iteration').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 2,
+        "description": "Atomicity Violation! - Functions 'f2' and 'f3' should be called atomically. (originated in function: 'test_iteration')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 100
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 2,
+    "file": "main.c",
+    "hash": "ce947ca2456755e519a5ef9967206272",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 100,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f2' and 'f3' should be called atomically. (originated in function: 'test_iteration').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 2,
+        "description": "Atomicity Violation! - Functions 'f2' and 'f3' should be called atomically. (originated in function: 'test_selection')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 123
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 2,
+    "file": "main.c",
+    "hash": "da1957b36af6a0a9f77c733b3f731afd",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 123,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f2' and 'f3' should be called atomically. (originated in function: 'test_selection').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 2,
+        "description": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically. (originated in function: 'test2')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 68
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 2,
+    "file": "main.c",
+    "hash": "37f086e7eea5577d5b2685d45107978a",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 68,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically. (originated in function: 'test2').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 2,
+        "description": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically. (originated in function: 'test_selection')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 130
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 2,
+    "file": "main.c",
+    "hash": "508e266830614671c800c346d67a575a",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 130,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically. (originated in function: 'test_selection').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 2,
+        "description": "Atomicity Violation! - Functions 'f4' and 'ff' should be called atomically. (originated in function: 'test_nested')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 140
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 2,
+    "file": "main.c",
+    "hash": "a1b23b4de3d6ee9a1f13c2a004f97285",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 140,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f4' and 'ff' should be called atomically. (originated in function: 'test_nested').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 2,
+        "description": "Atomicity Violation! - Functions 'ff' and 'f3' should be called atomically. (originated in function: 'test_nested')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 140
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 2,
+    "file": "main.c",
+    "hash": "c56fe305168a10c1f9e6fa8285745782",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 140,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'ff' and 'f3' should be called atomically. (originated in function: 'test_nested').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 2,
+        "description": "Atomicity Violation! - Functions 'ff' and 'f3' should be called atomically. (originated in function: 'test_nested')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 144
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 2,
+    "file": "main.c",
+    "hash": "c56fe305168a10c1f9e6fa8285745782",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 144,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'ff' and 'f3' should be called atomically. (originated in function: 'test_nested').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 3,
+        "description": "Atomicity Violation! - Functions 'f2' and 'f1' should be called atomically. (originated in function: 'test_iteration')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 95
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 3,
+    "file": "main.c",
+    "hash": "b1b4be951b51df0bd83b8ac2856ec8a1",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 95,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f2' and 'f1' should be called atomically. (originated in function: 'test_iteration').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 7,
+        "description": "Atomicity Violation! - Functions 'f1' and 'f3' should be called atomically. (originated in function: 'test_selection')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 122
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 7,
+    "file": "main.c",
+    "hash": "adeb4a7a9299b704d6865a923b13c410",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 122,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f1' and 'f3' should be called atomically. (originated in function: 'test_selection').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 8,
+        "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test1')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 47
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 8,
+    "file": "main.c",
+    "hash": "cc2e50fa66c8a687c19b236f11972245",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 47,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test1').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 8,
+        "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test1')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 53
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 8,
+    "file": "main.c",
+    "hash": "cc2e50fa66c8a687c19b236f11972245",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 53,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test1').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 8,
+        "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test_only_unlock')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 84
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 8,
+    "file": "main.c",
+    "hash": "2c488ee5d252857944734a84bc0fa8bd",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 84,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test_only_unlock').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 8,
+        "description": "Atomicity Violation! - Functions 'f2' and 'f4' should be called atomically. (originated in function: 'test2')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 63
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 8,
+    "file": "main.c",
+    "hash": "25c7b86e464de4a3084aac422b44c58a",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 63,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f2' and 'f4' should be called atomically. (originated in function: 'test2').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 8,
+        "description": "Atomicity Violation! - Functions 'f3' and 'f4' should be called atomically. (originated in function: 'test2')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 71
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 8,
+    "file": "main.c",
+    "hash": "90e6499dfd00860a2c4287affc285920",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 71,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f3' and 'f4' should be called atomically. (originated in function: 'test2').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 8,
+        "description": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically. (originated in function: 'test2')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 61
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 8,
+    "file": "main.c",
+    "hash": "37f086e7eea5577d5b2685d45107978a",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 61,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically. (originated in function: 'test2').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 8,
+        "description": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically. (originated in function: 'test_nested')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 144
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 8,
+    "file": "main.c",
+    "hash": "9f63dab560c8961adf4d89837801d94c",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 144,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically. (originated in function: 'test_nested').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 9,
+        "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test_iteration')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 95
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 9,
+    "file": "main.c",
+    "hash": "40d5b8d169f04ebadf06d303b1e26e14",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 95,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test_iteration').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 13,
+        "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test_selection')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 121
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 13,
+    "file": "main.c",
+    "hash": "3bccdc4da583424294f9ab9acc530d41",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 121,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test_selection').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 14,
+        "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test1')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 51
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 14,
+    "file": "main.c",
+    "hash": "cc2e50fa66c8a687c19b236f11972245",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 51,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test1').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 14,
+        "description": "Atomicity Violation! - Functions 'f2' and 'f3' should be called atomically. (originated in function: 'test1')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 53
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 14,
+    "file": "main.c",
+    "hash": "cbebec6c638197aae43c1b426bbeee86",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 53,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f2' and 'f3' should be called atomically. (originated in function: 'test1').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 16,
+        "description": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test_iteration')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 99
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 16,
+    "file": "main.c",
+    "hash": "40d5b8d169f04ebadf06d303b1e26e14",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 99,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f1' and 'f2' should be called atomically. (originated in function: 'test_iteration').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 16,
+        "description": "Atomicity Violation! - Functions 'f3' and 'f1' should be called atomically. (originated in function: 'test_iteration')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 102
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 16,
+    "file": "main.c",
+    "hash": "118544023901955d2a67582a1fe74b94",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 102,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f3' and 'f1' should be called atomically. (originated in function: 'test_iteration').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 18,
+        "description": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically. (originated in function: 'test_selection')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 129
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 18,
+    "file": "main.c",
+    "hash": "508e266830614671c800c346d67a575a",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 129,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f4' and 'f2' should be called atomically. (originated in function: 'test_selection').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 22,
+        "description": "Atomicity Violation! - Functions 'f1' and 'f3' should be called atomically. (originated in function: 'test_iteration')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 102
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 22,
+    "file": "main.c",
+    "hash": "ea85533a8bcf4290ec6ec6cff1c55997",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 102,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f1' and 'f3' should be called atomically. (originated in function: 'test_iteration').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 23,
+        "description": "Atomicity Violation within a Current Function! - Functions 'f3' and 'f1' should be called atomically. (originated in function: 'ff')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 16
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_WARNING",
+    "bug_type_hum": "Atomicity Violation within a Function",
+    "category": "Concurrency",
+    "column": 23,
+    "file": "main.c",
+    "hash": "5b52dc9f9f3a145b628a2ecafeaa010d",
+    "key": "main.c|main|ATOMICITY_VIOLATION_WARNING",
+    "line": 16,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation within a Current Function! - Functions 'f3' and 'f1' should be called atomically. (originated in function: 'ff').",
+    "severity": "WARNING"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 23,
+        "description": "Atomicity Violation! - Functions 'f3' and 'f1' should be called atomically. (originated in function: 'ff')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 16
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 23,
+    "file": "main.c",
+    "hash": "3751d86b5c2c510688d54899d8a2b0b7",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 16,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f3' and 'f1' should be called atomically. (originated in function: 'ff').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 29,
+        "description": "Atomicity Violation within a Current Function! - Functions 'f1' and 'f4' should be called atomically. (originated in function: 'ff')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 16
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_WARNING",
+    "bug_type_hum": "Atomicity Violation within a Function",
+    "category": "Concurrency",
+    "column": 29,
+    "file": "main.c",
+    "hash": "7a4a6bcc17c92c721cf40be00c54a3eb",
+    "key": "main.c|main|ATOMICITY_VIOLATION_WARNING",
+    "line": 16,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation within a Current Function! - Functions 'f1' and 'f4' should be called atomically. (originated in function: 'ff').",
+    "severity": "WARNING"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 29,
+        "description": "Atomicity Violation! - Functions 'f1' and 'f4' should be called atomically. (originated in function: 'ff')",
+        "filename": "main.c",
+        "level": 0,
+        "line_number": 16
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 29,
+    "file": "main.c",
+    "hash": "3e90bcf025e39bb3b558f8b5db892483",
+    "key": "main.c|main|ATOMICITY_VIOLATION_ERROR",
+    "line": 16,
+    "procedure": "main",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'f1' and 'f4' should be called atomically. (originated in function: 'ff').",
+    "severity": "ERROR"
+  }
 ]
