@@ -40,7 +40,7 @@ val apply_guard_destroy : AccessPath.t -> t -> t
 module Summary : sig
   include PrettyPrintable.PrintableEquatableOrderedType
 
-  val create : astate -> t
+  val create : Procname.t -> astate -> t
   (** Converts an abstract state to a summary. *)
 
   val is_top_level_fun : Procname.t -> (Procname.t * t) list -> bool

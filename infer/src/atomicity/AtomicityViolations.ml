@@ -106,7 +106,7 @@ let analyse_procedure ({proc_desc} as analysis_data : Domain.Summary.t Interproc
     match Analyser.compute_post analysis_data ~initial:pre proc_desc with
     | Some (post : Domain.t) ->
         (* Convert the abstract state to the function summary. *)
-        let summary : Domain.Summary.t = Domain.Summary.create post in
+        let summary : Domain.Summary.t = Domain.Summary.create pname post in
         (* Debug log. *)
         L.debug Analysis Verbose "\n\nFunction: %a\nAbstract State: %a\nSummary: %a\n" Procname.pp
           pname Domain.pp post Domain.Summary.pp summary ;

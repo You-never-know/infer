@@ -46,18 +46,24 @@ module Violations : sig
   val empty : t
   (** Creates an empty module. *)
 
+  val get_dummy_proc : Procname.t
+  (** Creates an empty procname for violation *)
+
   val is_empty : t -> bool
   (** Checks whether there are any violations to be reported. *)
 
-  val add : calls_pair -> Location.t -> t -> t
+  val add : Procname.t -> calls_pair -> Location.t -> t -> t
   (** Adds a new violation to be reported. *)
 
   val union : t -> t -> t
   (** Makes the union of atomicity violations to be reported. *)
 
-  val fold : f:(calls_pair * Location.t * severity -> 'a -> 'a) -> t -> 'a -> 'a
+  val fold : f:(Procname.t * calls_pair * Location.t * severity -> 'a -> 'a) -> t -> 'a -> 'a
   (** [fold ~f:f s a] computes (f xN ... (f x2 (f x1 a))...), where x1 ... xN are the elements of s
       in increasing order. *)
+
+  val map : (Procname.t * calls_pair * Location.t * severity -> Procname.t * calls_pair * Location.t * severity) -> t -> t
+  (** [map f s] returns a set where each element [x] in [s] has been replaced by [f x]. *)
 
   val make_all_warnings : t -> t
   (** Labels all atomicity violations to be reported as warnings. *)
@@ -69,7 +75,7 @@ end = struct
 
   (** A structure that represents a single atomicity violation to be reported. *)
   type violation =
-    {pair: calls_pair; loc: (Location.t[@printer Location.pp_file_pos]); severity: severity}
+    {proc: Procname.t; pair: calls_pair; loc: (Location.t[@printer Location.pp_file_pos]); severity: severity}
   [@@deriving compare, equal, show {with_path= false}]
 
   (** A set of atomicity violations to be reported. *)
@@ -83,14 +89,23 @@ end = struct
 
   let is_empty : t -> bool = ViolationSet.is_empty
 
-  let add (pair : calls_pair) (loc : Location.t) : t -> t =
-    ViolationSet.add {pair; loc; severity= Error}
+  let get_dummy_proc : Procname.t = Procname.empty_block
+
+  let add (proc : Procname.t) (pair : calls_pair) (loc : Location.t) : t -> t =
+    ViolationSet.add {proc; pair; loc; severity= Error}
 
   let union : t -> t -> t = ViolationSet.union
 
-  let fold ~(f : calls_pair * Location.t * severity -> 'a -> 'a) : t -> 'a -> 'a =
-    ViolationSet.fold (fun ({pair; loc; severity} : violation) : ('a -> 'a) ->
-        f (pair, loc, severity) )
+  let fold ~(f : Procname.t * calls_pair * Location.t * severity -> 'a -> 'a) : t -> 'a -> 'a =
+    ViolationSet.fold (fun ({proc; pair; loc; severity} : violation) : ('a -> 'a) ->
+        f (proc, pair, loc, severity) )
+
+  let map (f : Procname.t * calls_pair * Location.t * severity -> Procname.t * calls_pair * Location.t * severity) (s : t) : t =
+    ViolationSet.fold
+      (fun ({proc; pair; loc; severity} : violation) acc ->
+        let proc', pair', loc', severity' = f (proc, pair, loc, severity) in
+        ViolationSet.add {proc= proc'; pair= pair'; loc= loc'; severity= severity'} acc)
+      s ViolationSet.empty
 
   let make_all_warnings : t -> t =
     ViolationSet.map (fun (violation : violation) : violation -> {violation with severity= Warning})
@@ -225,7 +240,7 @@ let add_to_correct_usage_set (pair : calls_pair) (loc : Location.t) (set : corre
     set None
   in
   match found with
-  | Some (existing_pair, existing_loc) ->
+  | Some _ ->
       (* Location already exists, no need to add it again *)
       set
   | None ->
@@ -270,6 +285,7 @@ let initial : t =
     ; calls= CallSet.empty }
 
 let apply_call ~(f_name : string) (loc : Location.t) : t -> t =
+  let dummy_proc = Violations.get_dummy_proc in
   let mapper (astate_el : t_element) : t_element =
     let calls_pair_push : calls_pair -> string -> calls_pair = Fn.compose Tuple2.create snd in
     let first_call : string =
@@ -286,7 +302,7 @@ let apply_call ~(f_name : string) (loc : Location.t) : t -> t =
 
     (* Check last_pair for violation or correct usage *)
     if atomic_pairs#check_violating_atomicity_bool last_pair ~atomic_last_pairs ~check_first_empty:true then
-      violations := Violations.add last_pair loc !violations
+      violations := Violations.add dummy_proc last_pair loc !violations
     else if AtomicPairSet.mem_pair last_pair atomic_last_pairs then
       correct_usages := add_to_correct_usage_set last_pair loc !correct_usages ;
 
@@ -299,7 +315,7 @@ let apply_call ~(f_name : string) (loc : Location.t) : t -> t =
           atomic_last_pairs
       in
       if atomic_pairs#check_violating_atomicity_bool p ~atomic_last_pairs ~check_first_empty:false then
-        violations := Violations.add p loc !violations
+        violations := Violations.add dummy_proc p loc !violations
       else if AtomicPairSet.mem_pair p atomic_last_pairs then
         correct_usages := add_to_correct_usage_set p loc !correct_usages
     in
@@ -405,15 +421,17 @@ module Summary = struct
   type violation_count = calls_pair * int
   [@@deriving compare, equal, show]
 
-    let compare_violation_count (v1 : violation_count) (v2 : violation_count) : int =
+   let compare_violation_count (v1 : violation_count) (v2 : violation_count) : int =
       let (pair1, count1) = v1 in
       let (pair2, count2) = v2 in
-      (* First compare by the violation pair *)
+      (* Compare pairs using equal_pairs *)
       let cmp_pairs =
         if equal_pairs pair1 pair2 then 0
         else
-          (* If pairs are not equal, determine the comparison result based on their lexicographic ordering *)
-          String.compare (fst pair1) (fst pair2)
+          (* If pairs are not equal, compare lexicographically *)
+          let cmp_fst = String.compare (fst pair1) (fst pair2) in
+          if cmp_fst <> 0 then cmp_fst
+          else String.compare (snd pair1) (snd pair2)
       in
       if Int.equal cmp_pairs 0 then
         (* If pairs are equal, compare by count *)
@@ -446,6 +464,16 @@ module Summary = struct
         None  (* Initial accumulator is None, which means no pair found *)
       in
       result
+
+    let violation_set_remove_pair (pair : calls_pair) (set : violation_count_set) : violation_count_set =
+      ViolationCountSet.fold
+        (fun (existing_pair, count) acc ->
+          if equal_pairs existing_pair pair then acc
+          else ViolationCountSet.add (existing_pair, count) acc)
+        set
+        ViolationCountSet.empty
+
+
 
 (* ************************************ Correct usage count ************************************************* *)
 
@@ -494,7 +522,15 @@ let correct_usage_set_find_pair_and_get_count (pair : calls_pair) (set : correct
   result
 
 (* ************************************ Summary functions ************************************************* *)
-let create (astate : astate) : t =
+let set_procname_in_violations (proc : Procname.t) (violations : Violations.t) : Violations.t =
+  Violations.map
+  (fun (old_proc, pair, loc, severity) ->
+      if Procname.equal old_proc Procname.empty_block then (proc, pair, loc, severity)
+      else (old_proc, pair, loc, severity)
+  )
+  violations
+
+let create (proc : Procname.t) (astate : astate) : t =
   let first_calls : CallSet.t ref = ref CallSet.empty
   and last_calls : CallSet.t ref = ref CallSet.empty
   and s_violations : Violations.t ref = ref Violations.empty
@@ -505,7 +541,7 @@ let create (astate : astate) : t =
     if not (String.is_empty first_call) then first_calls := CallSet.add first_call !first_calls ;
     if not (String.is_empty (snd last_pair)) then
       last_calls := CallSet.add (snd last_pair) !last_calls ;
-    s_violations := Violations.union violations !s_violations ;
+    s_violations := Violations.union (set_procname_in_violations proc violations) !s_violations ;
     s_correct_usages := CorrectAtomicUsageSet.union correct_usages !s_correct_usages ;
     s_calls := CallSet.union calls !s_calls
   in
@@ -522,20 +558,45 @@ let create (astate : astate) : t =
 
  (* ************************************ Hard limit functions ************************************************* *)
 
-  let iterate_over_violations_in_summary (summary : t) (violationCountSet : violation_count_set) : violation_count_set =
-      let {violations} = summary in
-      Violations.fold
-        ~f:(fun (pair, _loc, _severity) acc ->
-          (* Only count by the pair, disregarding loc and severity *)
-          match violation_set_find_pair_and_get_count pair acc with
-          | Some count ->
-              let updated_set = ViolationCountSet.remove (pair, count) acc in
-              ViolationCountSet.add (pair, count + 1) updated_set
-          | None ->
-              ViolationCountSet.add (pair, 1) acc
-        )
-        violations
-        violationCountSet
+let iterate_over_violations_in_summary (summary : t) (violationCountSet : violation_count_set) : violation_count_set =
+  let {violations} = summary in
+  Violations.fold
+    ~f:(fun (_proc, pair, _loc, _severity) acc ->
+      let before_set_str = Format.asprintf "%a" ViolationCountSet.pp acc in
+      let pair_str = Format.asprintf "%a" pp_calls_pair pair in
+
+      match violation_set_find_pair_and_get_count pair acc with
+      | Some count ->
+          let updated_set = violation_set_remove_pair pair acc in
+          let final_set = ViolationCountSet.add (pair, count + 1) updated_set in
+          (* Commented out the print statements *)
+          (* let after_set_str = Format.asprintf "%a" ViolationCountSet.pp final_set in
+             let _ = Format.printf
+               "@[<v>\
+                 Pair: %s@,\
+                 Found existing count: %d@,\
+                 Set before: %s@,\
+                 Set after: %s@]@.\n"
+               pair_str count before_set_str after_set_str
+           in *)
+          final_set
+
+      | None ->
+          let final_set = ViolationCountSet.add (pair, 1) acc in
+          (* Commented out the print statements *)
+          (* let after_set_str = Format.asprintf "%a" ViolationCountSet.pp final_set in
+             let _ = Format.printf
+               "@[<v>\
+                 Pair: %s@,\
+                 Not found, adding with count 1@,\
+                 Set before: %s@,\
+                 Set after: %s@]@.\n"
+               pair_str before_set_str after_set_str
+           in *)
+          final_set
+    )
+    violations
+    violationCountSet
 
   let count_violations (summaries : (Procname.t * t) list) : violation_count_set =
       List.fold_left
@@ -550,18 +611,18 @@ let create (astate : astate) : t =
   let proc, state = summary in
   if not (is_top_level_fun proc summaries) then summary
   else
-  (* Print out the full state of the summary *)
-(* Format.printf "@[<v>Summary for procedure: %a@]@." Procname.pp proc; *)
-(* Format.printf "@[<v>Violations: %a@]@." Violations.pp state.violations; *)
-(* Format.printf "@[<v>Correct usage counts: %a@]@." CorrectUsageCountSet.pp state.correct_usage_counts; *)
-(* Format.printf "@[<v>Calls: %a@]@." CallSet.pp state.calls; *)
-(* Format.print_flush (); *)
+      (* Print out the full state of the summary *)
+    (* Format.printf "@[<v>Summary for procedure: %a@]@." Procname.pp proc; *)
+    (* Format.printf "@[<v>Violations: %a@]@." Violations.pp state.violations; *)
+    (* Format.printf "@[<v>Violations counts: %a@]@." ViolationCountSet.pp violationCountSet; *)
+    (* Format.printf "@[<v>Calls: %a@]@." CallSet.pp state.calls; *)
+    (* Format.print_flush (); *)
       let new_violations =
         Violations.fold
-          ~f:(fun (pair, loc, _) acc ->
+          ~f:(fun (proc, pair, loc, _) acc ->
             match violation_set_find_pair_and_get_count pair violationCountSet with
             | Some count when count >= Config.atomicity_violation_min_limit_to_print ->
-                Violations.add pair loc acc
+                Violations.add proc pair loc acc
             | _ -> acc)
           state.violations
           Violations.empty
@@ -623,11 +684,11 @@ let count_correct_usages (summaries : (Procname.t * t) list) : correct_usage_cou
 (*     Format.print_flush (); *)
         let new_violations =
           Violations.fold
-              ~f:(fun (pair, loc, _) acc ->
+              ~f:(fun (proc, pair, loc, _) acc ->
                 let violation_count = violation_set_find_pair_and_get_count pair violationCountSet in
                 let correct_usage_count = correct_usage_set_find_pair_and_get_count pair correctUsageSet in
                 if passed_relative_limit violation_count correct_usage_count then
-                    Violations.add pair loc acc
+                    Violations.add proc pair loc acc
                 else
                     acc
               )
@@ -657,30 +718,40 @@ let count_correct_usages (summaries : (Procname.t * t) list) : correct_usage_cou
         in
         summaries_after_relative_filter
 
-  let report_atomicity_violations
-      ~(f : Location.t -> msg:string -> IssueType.t -> IssueLog.t -> IssueLog.t) ({violations} : t)
-      : IssueLog.t -> IssueLog.t =
-    (* Report atomicity violations from atomicity violations stored in the summary. *)
-    let fold (((pfst, psnd) : calls_pair), (loc : Location.t), (severity : Violations.severity))
-        (issue_log : IssueLog.t) : IssueLog.t =
-      if String.is_empty pfst && String.is_empty psnd then issue_log
-      else
-        let msg : string =
-          let warning_msg : string =
-            match severity with Warning -> " within a Current Function" | _ -> ""
-          in
-          if (not (String.is_empty pfst)) && not (String.is_empty psnd) then
-            F.asprintf
-              "Atomicity Violation%s! - Functions '%s' and '%s' should be called atomically."
-              warning_msg pfst psnd
-          else
-            F.asprintf "Atomicity Violation%s! - Function '%s' should be called atomically."
-              warning_msg
-              (if String.is_empty pfst then psnd else pfst)
-        in
-        f loc ~msg (Violations.severity_to_issue_type severity) issue_log
-    in
-    Violations.fold ~f:fold violations
+let report_atomicity_violations
+    ~(f : Location.t -> msg:string -> IssueType.t -> IssueLog.t -> IssueLog.t)
+    ({violations} : t) : IssueLog.t -> IssueLog.t =
+  (* Report atomicity violations from atomicity violations stored in the summary. *)
+  let fold (proc, (pfst, psnd), loc, severity) (issue_log : IssueLog.t) : IssueLog.t =
+    if String.is_empty pfst && String.is_empty psnd then issue_log
+    else
+      let warning_msg =
+        match severity with
+        | Violations.Warning -> " within a Current Function"
+        | _ -> ""
+      in
+      let origin_msg =
+        if Procname.is_java proc || Procname.is_csharp proc then
+          F.asprintf " (originated in method: '%a')" Procname.pp proc
+        else
+          F.asprintf " (originated in function: '%a')" Procname.pp proc
+      in
+      let msg =
+        if (not (String.is_empty pfst)) && not (String.is_empty psnd) then
+          F.asprintf
+            "Atomicity Violation%s! - Functions '%s' and '%s' should be called atomically.%s"
+            warning_msg pfst psnd origin_msg
+        else
+          F.asprintf
+            "Atomicity Violation%s! - Function '%s' should be called atomically.%s"
+            warning_msg
+            (if String.is_empty pfst then psnd else pfst)
+            origin_msg
+      in
+      f loc ~msg (Violations.severity_to_issue_type severity) issue_log
+  in
+  Violations.fold ~f:fold violations
+
 end
 
 let apply_summary
@@ -701,6 +772,7 @@ let apply_summary
         ref (CorrectAtomicUsageSet.union correct_usages s_correct_usages)
       in
       let last_call : string = snd last_pair in
+      let dummy_proc : Procname.t = Violations.get_dummy_proc in
       let iterator (first_call : string) : unit =
         let p : calls_pair = (last_call, first_call) in
         let atomic_last_pairs_mapped : AtomicPairSet.t =
@@ -710,7 +782,7 @@ let apply_summary
           atomic_pairs#check_violating_atomicity_bool p ~atomic_last_pairs:atomic_last_pairs_mapped
         in
         if is_violation then
-          violations := Violations.add p loc !violations
+          violations := Violations.add dummy_proc p loc !violations
         else if AtomicPairSet.mem_pair p atomic_last_pairs_mapped then
           correct_usages := add_to_correct_usage_set p loc !correct_usages
       in
