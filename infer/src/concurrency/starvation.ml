@@ -399,6 +399,8 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
               astate )
         | Unlock locks ->
             do_unlock locks astate
+        | RcuLock _ | RcuUnlock _ ->
+            astate
         | GuardUnlock guard ->
             Domain.unlock_guard astate guard
         | GuardRelease (_ : HilExp.t) ->

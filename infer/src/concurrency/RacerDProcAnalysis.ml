@@ -92,6 +92,8 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
     | GuardRelease (_ : HilExp.t) ->
         (* TODO: guard release *)
         astate
+    | RcuLock _ | RcuUnlock _ ->
+        astate
     | LockedIfTrue _ | GuardLockedIfTrue _ ->
         Domain.lock_if_true ret_access_exp astate
     | GuardConstruct {strategy: ConcurrencyModels.guard_strategy = _} ->

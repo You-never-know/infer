@@ -41,6 +41,12 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
       (* unlock *)
       | Unlock (locks : HilExp.t list) ->
           Domain.apply_unlocks (get_exps_paths locks) astate
+      (* rcu lock *)
+      | RcuLock (locks : HilExp.t list) ->
+          Domain.apply_locks (get_exps_paths locks) astate
+      (* rcu unlock *)
+      | RcuUnlock (locks : HilExp.t list) ->
+          Domain.apply_unlocks (get_exps_paths locks) astate
       (* guard construct *)
       | GuardConstruct {guard: HilExp.t; locks: HilExp.t list; strategy= Default} ->
           Domain.apply_guard_construct (get_exp_path guard) (get_exps_paths locks) ~acquire:true

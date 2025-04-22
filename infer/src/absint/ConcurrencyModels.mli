@@ -27,6 +27,8 @@ type lock_effect =
   | GuardRelease of HilExp.t
       (** breaks the association of the locks in a guard, no locks are unlocked - clang only *)
   | GuardDestroy of HilExp.t  (** destroy guard and unlock underlying mutex - clang only *)
+  | RcuLock of HilExp.t list (* type of lock used in RCU *)
+  | RcuUnlock of HilExp.t list (* type of unlock used in RCU *)
   | NoEffect  (** function call has no lock-relevant effect *)
 
 type thread = BackgroundThread | MainThread | MainThreadIfTrue | UnknownThread

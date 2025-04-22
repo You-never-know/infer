@@ -20,6 +20,8 @@ type lock_effect =
   | GuardUnlock of HilExp.t
   | GuardRelease of HilExp.t
   | GuardDestroy of HilExp.t
+  | RcuLock of HilExp.t list
+  | RcuUnlock of HilExp.t list
   | NoEffect
 
 let make_lock_action type_str action procname locks =
@@ -225,7 +227,9 @@ end = struct
       , (is_std_trylock : Procname.t -> bool)
       , (is_pthread_lock : Procname.t -> bool)
       , (is_pthread_unlock : Procname.t -> bool)
-      , (is_pthread_trylock : Procname.t -> bool) ) =
+      , (is_pthread_trylock : Procname.t -> bool)
+      , (is_rcu_lock : Procname.t -> bool)
+      , (is_rcu_unlock : Procname.t -> bool) ) =
     let mk_model_matcher ~f =
       let lock_methods =
         List.concat_map lock_models ~f:(fun mdl ->
@@ -248,7 +252,13 @@ end = struct
         ; "pthread_rwlock_tryrdlock"
         ; "pthread_rwlock_trywrlock"
         ; "pthread_rwlock_timedrdlock"
-        ; "pthread_rwlock_timedwrlock" ] )
+        ; "pthread_rwlock_timedwrlock" ]
+    , mk_matcher ["urcu_memb_read_lock"; "urcu_mb_read_lock"; "urcu_bp_read_lock"; "urcu_signal_read_lock";  "urcu_qsbr_read_lock";
+                  "rcu_read_lock"; "rcu_read_lock_bh"; "rcu_read_lock_sched"; "local_bh_disable"; "rcu_read_lock_sched_notrace";
+                  "preempt_disable"; "local_irq_save"; "srcu_read_lock";"srcu_read_lock_notrace"]
+    , mk_matcher ["urcu_memb_read_unlock"; "urcu_mb_read_unlock"; "urcu_bp_read_unlock"; "urcu_signal_read_unlock";
+                  "urcu_qsbr_read_unlock"; "rcu_read_unlock";  "rcu_read_unlock_bh"; "rcu_read_unlock_sched"; "local_bh_enable";
+                  "rcu_read_unlock_sched_notrace"; "preempt_enable"; "local_irq_restore"; "srcu_read_unlock"; "srcu_read_unlock_notrace"  ] )
 
   let scoped_lock_guard : string = "std::scoped_lock" (* no lock/unlock *)
 
@@ -361,6 +371,8 @@ end = struct
     else if is_guard_release pname then make_guard_release pname actuals
     else if is_guard_destructor pname then make_guard_destructor pname actuals
     else if is_guard_trylock pname then make_guard_trylock pname actuals
+    else if is_rcu_lock pname then RcuLock fst_arg
+    else if is_rcu_unlock pname then RcuUnlock fst_arg
     else NoEffect
 end
 
