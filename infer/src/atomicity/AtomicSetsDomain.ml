@@ -145,38 +145,40 @@ let update_astate_el_after_calls ({atomic_calls} as astate_el : t_element) : t_e
 
 let apply_call ~(f_name : string) (loc : Location.t) : t -> t =
   let mapper ({atomic_calls; calls} as astate_el : t_element) : t_element =
-    let loc : Location.t option =
+    let loc_opt : Location.t option =
       if Config.atomic_sets_ignore_single_atomic_calls then Some loc else None
     in
     let atomic_calls : AtomicCallsSet.t =
       AtomicCallsSet.map
         (fun ((calls, lock) : atomic_calls) : atomic_calls ->
-          (CallSet.add (f_name, loc) calls, lock) )
+          (CallSet.add (f_name, loc_opt) calls, lock))
         atomic_calls
-    and calls : CallSet.t list =
-      List.mapi calls ~f:(fun (i : int) : (CallSet.t -> CallSet.t) ->
-          if Int.equal i 0 then CallSet.add (f_name, loc) else Fn.id )
+    in
+    let calls : CallSet.t list =
+      List.mapi calls ~f:(fun i ->
+        if Int.equal i 0 then CallSet.add (f_name, loc_opt) else Fn.id)
     in
     update_astate_el_after_calls {astate_el with atomic_calls; calls}
   in
   Fn.compose reduce_atomic_calls (TSet.map mapper)
-
 
 let apply_locks (locks_paths : AccessPath.t list) : t -> t =
   let mapper ({guards; atomic_calls} as astate_el : t_element) : t_element =
     let locks_paths : AccessPath.t list = Guards.reveal_locks guards locks_paths in
     let atomic_calls : AtomicCallsSet.t =
       let fold (atomic_calls : AtomicCallsSet.t) (path : AccessPath.t) : AtomicCallsSet.t =
-        let found : bool ref = ref false in
+        let found = ref false in
         let mapper ((calls, lock) as atomic_calls : atomic_calls) : atomic_calls =
           if AccessPath.equal path (Lock.path lock) then (
-            found := true ;
-            (calls, Lock.lock lock) )
+            found := true;
+            (calls, Lock.lock lock))
           else atomic_calls
         in
-        let atomic_calls : AtomicCallsSet.t = AtomicCallsSet.map mapper atomic_calls in
+        let atomic_calls = AtomicCallsSet.map mapper atomic_calls in
         if !found then atomic_calls
-        else AtomicCallsSet.add (CallSet.empty, Lock.create path) atomic_calls
+        else (
+          AtomicCallsSet.add (CallSet.empty, Lock.create path) atomic_calls
+        )
       in
       List.fold locks_paths ~init:atomic_calls ~f:fold
     in
@@ -184,6 +186,20 @@ let apply_locks (locks_paths : AccessPath.t list) : t -> t =
   in
   TSet.map mapper
 
+  let custom_compare lock_path provided_path =
+      let lock_base = fst lock_path in
+      let unlock_base = fst provided_path in
+      let lock_accesses = snd lock_path in
+      let unlock_accesses = snd provided_path in
+      let (lock_var, lock_typ) = lock_base in
+      let (unlock_var, unlock_typ) = unlock_base in
+      let var_to_string v = Exp.to_string (Var.to_exp v) in
+      let base_equal =
+        String.equal (var_to_string lock_var) (var_to_string unlock_var)
+        && Typ.equal lock_typ unlock_typ
+      in
+      let access_equal = [%compare.equal: AccessPath.access list] lock_accesses unlock_accesses in
+      base_equal && access_equal
 
 let apply_unlocks (locks_paths : AccessPath.t list) : t -> t =
   let mapper ({guards; atomic_calls; final_atomic_calls} as astate_el : t_element) : t_element =
@@ -191,15 +207,22 @@ let apply_unlocks (locks_paths : AccessPath.t list) : t -> t =
     and locks_paths : AccessPath.t list = Guards.reveal_locks guards locks_paths in
     let atomic_calls : AtomicCallsSet.t =
       let mapper ((calls, lock) as atomic_calls : atomic_calls) : atomic_calls option =
-        let ((_, lock) as atomic_calls : atomic_calls) =
-          if List.mem locks_paths (Lock.path lock) ~equal:AccessPath.equal then (
-            let lock : Lock.t = Lock.unlock lock in
-            if (not (Lock.is_locked lock)) && CallSet.cardinal calls > 0 then
-              final_atomic_calls := CallsSet.add calls !final_atomic_calls ;
-            (calls, lock) )
-          else atomic_calls
+        let lock_path = Lock.path lock in
+        let matched = List.exists locks_paths ~f:(fun provided_path ->
+            (* Check equality using detailed printing for debugging *)
+            let equal_paths = custom_compare provided_path lock_path in
+            equal_paths
+          )
         in
-        if Lock.is_locked lock then Some atomic_calls else None
+        if matched then (
+          let lock = Lock.unlock lock in
+          if (not (Lock.is_locked lock)) && CallSet.cardinal calls > 0 then (
+            final_atomic_calls := CallsSet.add calls !final_atomic_calls
+          ) ;
+          if Lock.is_locked lock then Some (calls, lock) else None
+        ) else (
+          Some atomic_calls
+        )
       in
       AtomicCallsSet.filter_map mapper atomic_calls
     in

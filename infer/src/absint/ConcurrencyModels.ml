@@ -371,8 +371,24 @@ end = struct
     else if is_guard_release pname then make_guard_release pname actuals
     else if is_guard_destructor pname then make_guard_destructor pname actuals
     else if is_guard_trylock pname then make_guard_trylock pname actuals
-    else if is_rcu_lock pname then RcuLock fst_arg
-    else if is_rcu_unlock pname then RcuUnlock fst_arg
+    else if is_rcu_lock pname then (
+     let dummy_exp =
+      let var = Pvar.mk (Mangled.from_string "rcu_read_lock") pname in
+      let typ = Typ.mk Typ.Tvoid in
+      let access_path = AccessPath.of_pvar var typ in
+      let base = fst access_path in  (* Extract the base part from the AccessPath.t *)
+      HilExp.AccessExpression (HilExp.AccessExpression.base base)  (* Use base here *)
+    in
+      RcuLock [dummy_exp])
+   else if is_rcu_unlock pname then (
+    let dummy_exp =
+      let var = Pvar.mk (Mangled.from_string "rcu_read_lock") pname in
+      let typ = Typ.mk Typ.Tvoid in
+      let access_path = AccessPath.of_pvar var typ in
+      let base = fst access_path in  (* Extract the base part from the AccessPath.t *)
+      HilExp.AccessExpression (HilExp.AccessExpression.base base)  (* Use base here *)
+    in
+      RcuUnlock [dummy_exp])
     else NoEffect
 end
 
