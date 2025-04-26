@@ -3685,6 +3685,12 @@ and atomic_sets_widen_limit : int ref =
     "Specify the maximum number of iterations in a widening operator in the 'atomic-sets' checker. \
      A default value is '5'."
 
+and atomic_sets_track_memory_access : bool ref =
+  CLOpt.mk_bool ~default:false ~long:"atomic_sets_track_memory_access"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify whether atomic sets should be also track memory access and include it \
+     in the result. A default value is 'false'."
+
 
 and atomic_sets_locked_functions_limit : int ref =
   CLOpt.mk_int ~default:20 ~long:"atomic-sets-locked-functions-limit"
@@ -3734,6 +3740,11 @@ and atomicity_violations_widen_limit : int ref =
     "Specify the maximum number of iterations in a widening operator in the 'atomicity-violations' \
      checker. A default value is '10'."
 
+and atomicity_violations_track_memory_access : bool ref =
+  CLOpt.mk_bool ~default:false ~long:"atomicity_violations_track_memory_access"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify whether memory access memory violations should be also tracked \
+     in the analysis. A default value is 'false'."
 
 and atomicity_violations_ignore_local_calls : bool ref =
   CLOpt.mk_bool ~default:true ~long:"atomicity-violations-ignore-local-calls"
@@ -5064,6 +5075,8 @@ and atomicity_allowed_classes_file : string option = !atomicity_allowed_classes_
 
 and atomic_sets_widen_limit : int = !atomic_sets_widen_limit
 
+and atomic_sets_track_memory_access : bool = !atomic_sets_track_memory_access
+
 and atomic_sets_locked_functions_limit : int = !atomic_sets_locked_functions_limit
 
 and atomic_sets_file_append : bool = !atomic_sets_file_append
@@ -5078,6 +5091,8 @@ and atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_prin
 and atomic_sets_ignore_single_atomic_calls : bool = !atomic_sets_ignore_single_atomic_calls
 
 and atomicity_violations_widen_limit : int = !atomicity_violations_widen_limit
+
+and atomicity_violations_track_memory_access : bool = !atomicity_violations_track_memory_access
 
 and atomicity_violations_ignore_local_calls : bool = !atomicity_violations_ignore_local_calls
 

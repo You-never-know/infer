@@ -955,6 +955,8 @@ val atomicity_allowed_classes_file : string option
 
 val atomic_sets_widen_limit : int
 
+val atomic_sets_track_memory_access : bool
+
 val atomic_sets_locked_functions_limit : int
 
 val atomic_sets_file_append : bool
@@ -968,6 +970,8 @@ val atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_prin
 val atomic_sets_ignore_single_atomic_calls : bool
 
 val atomicity_violations_widen_limit : int
+
+val atomicity_violations_track_memory_access : bool
 
 val atomicity_violations_ignore_local_calls : bool
 
