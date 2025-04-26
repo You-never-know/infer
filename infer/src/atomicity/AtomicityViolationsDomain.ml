@@ -331,6 +331,21 @@ let apply_call ~(f_name : string) (loc : Location.t) : t -> t =
   in
   TSet.map mapper
 
+let custom_compare lock_path provided_path =
+      let lock_base = fst lock_path in
+      let unlock_base = fst provided_path in
+      let lock_accesses = snd lock_path in
+      let unlock_accesses = snd provided_path in
+      let (lock_var, lock_typ) = lock_base in
+      let (unlock_var, unlock_typ) = unlock_base in
+      let var_to_string v = Exp.to_string (Var.to_exp v) in
+      let base_equal =
+        String.equal (var_to_string lock_var) (var_to_string unlock_var)
+        && Typ.equal lock_typ unlock_typ
+      in
+      let access_equal = [%compare.equal: AccessPath.access list] lock_accesses unlock_accesses in
+      base_equal && access_equal
+
 let apply_locks (locks_paths : AccessPath.t list) : t -> t =
   let mapper ({guards; atomic_last_pairs} as astate_el : t_element) : t_element =
     let locks_paths : AccessPath.t list = Guards.reveal_locks guards locks_paths in
@@ -338,7 +353,7 @@ let apply_locks (locks_paths : AccessPath.t list) : t -> t =
       let fold (atomic_last_pairs : AtomicPairSet.t) (path : AccessPath.t) : AtomicPairSet.t =
         let found : bool ref = ref false in
         let mapper ((p, lock) as atomic_pair : atomic_pair) : atomic_pair =
-          if AccessPath.equal path (Lock.path lock) then (
+          if custom_compare path (Lock.path lock) then (
             found := true ;
             (p, Lock.lock lock) )
           else atomic_pair
@@ -360,7 +375,7 @@ let apply_unlocks (locks_paths : AccessPath.t list) : t -> t =
     let atomic_last_pairs : AtomicPairSet.t =
       let mapper ((p, lock) as atomic_pair : atomic_pair) : atomic_pair option =
         let ((_, lock) as atomic_pair : atomic_pair) =
-          if List.mem locks_paths (Lock.path lock) ~equal:AccessPath.equal then (p, Lock.unlock lock)
+          if List.mem locks_paths (Lock.path lock) ~equal:custom_compare then (p, Lock.unlock lock)
           else atomic_pair
         in
         if Lock.is_locked lock then Some atomic_pair else None

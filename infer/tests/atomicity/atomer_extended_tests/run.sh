@@ -7,6 +7,9 @@ NC='\033[0m'
 
 function clean
 {
+  if [[ -f Makefile ]]; then
+    make clean
+  fi
   rm -rf infer-out ./*.o ./*.class ./*.ast.sh atomic-sets
 }
 

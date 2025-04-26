@@ -1,0 +1,77 @@
+[
+  {
+    "bug_trace": [
+      {
+        "column_number": 5,
+        "description": "Atomicity Violation! - Functions 'change_char' and 'decrement_b' should be called atomically. (originated in function: 'reader')",
+        "filename": "rcu_example.c",
+        "level": 0,
+        "line_number": 73
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 5,
+    "file": "rcu_example.c",
+    "hash": "3ff5ffbe56b98886cd645e9ea204ccbb",
+    "key": "rcu_example.c|summon_reader|ATOMICITY_VIOLATION_ERROR",
+    "line": 73,
+    "procedure": "summon_reader",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'change_char' and 'decrement_b' should be called atomically. (originated in function: 'reader').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 5,
+        "description": "Atomicity Violation! - Functions 'increment_a' and 'change_char' should be called atomically. (originated in function: 'logic1')",
+        "filename": "rcu_example.c",
+        "level": 0,
+        "line_number": 54
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 5,
+    "file": "rcu_example.c",
+    "hash": "7c44e2e0a6b632a818ccb7e17896b61c",
+    "key": "rcu_example.c|summon_reader|ATOMICITY_VIOLATION_ERROR",
+    "line": 54,
+    "procedure": "summon_reader",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'increment_a' and 'change_char' should be called atomically. (originated in function: 'logic1').",
+    "severity": "ERROR"
+  },
+  {
+    "bug_trace": [
+      {
+        "column_number": 5,
+        "description": "Atomicity Violation! - Functions 'rcu_dereference_sym' and 'increment_a' should be called atomically. (originated in function: 'logic2')",
+        "filename": "rcu_example.c",
+        "level": 0,
+        "line_number": 59
+      }
+    ],
+    "bug_trace_length": 1,
+    "bug_trace_max_depth": 0,
+    "bug_type": "ATOMICITY_VIOLATION_ERROR",
+    "bug_type_hum": "Atomicity Violation",
+    "category": "Concurrency",
+    "column": 5,
+    "file": "rcu_example.c",
+    "hash": "7f2306b9783e37e33c02941f85683d7c",
+    "key": "rcu_example.c|summon_reader|ATOMICITY_VIOLATION_ERROR",
+    "line": 59,
+    "procedure": "summon_reader",
+    "procedure_start_line": 0,
+    "qualifier": "Atomicity Violation! - Functions 'rcu_dereference_sym' and 'increment_a' should be called atomically. (originated in function: 'logic2').",
+    "severity": "ERROR"
+  }
+]
