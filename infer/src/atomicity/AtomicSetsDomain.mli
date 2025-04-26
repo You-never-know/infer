@@ -37,6 +37,16 @@ val apply_guard_destroy : AccessPath.t -> t -> t
 val final_update : t -> t
 (** Updates an abstract state at the end of a function. *)
 
+(* ************************************ Memory Access ************************************************* *)
+val apply_lhs_memory_access : lhs:HilExp.access_expression -> loc:Location.t -> under_lock:bool -> astate -> astate
+(** Apply write memory access *)
+
+val apply_rhs_memory_access : rhs:HilExp.t -> loc:Location.t -> under_lock:bool -> astate -> astate
+(** Apply read memory access *)
+
+val is_memory_access_under_lock : t -> bool
+(** Checks if memory access is under a lock *)
+
 (* ************************************ Summary ************************************************* *)
 
 (** A module that encapsulates a summary of a function. *)

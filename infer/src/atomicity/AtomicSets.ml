@@ -93,8 +93,16 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
         , (_ : CallFlags.t)
         , (_ : Location.t) ) ->
         astate
-    | Assign (_, _, _) ->
-        astate
+    | Assign
+        ( (lhs : HilExp.AccessExpression.t)
+        , (rhs : HilExp.t)
+        , (loc : Location.t) ) ->
+            if Config.atomic_sets_track_memory_access then
+                let under_lock = Domain.is_memory_access_under_lock astate in
+                astate
+                |> Domain.apply_lhs_memory_access ~lhs ~loc ~under_lock
+                |> Domain.apply_rhs_memory_access ~rhs ~loc ~under_lock
+            else astate
     | Assume (_, _, _, _) ->
         astate
     | Metadata _ ->

@@ -28,6 +28,23 @@ module AtomicCallsSet = MakePPSet (struct
   type t = atomic_calls [@@deriving compare, equal, show {with_path= false}]
 end)
 
+(* Type to save info about memory access *)
+module MemoryAccess = struct
+  type access_kind = Read | Write
+  [@@deriving compare, equal, show {with_path= false}]
+
+  type t = {
+    access_path: HilExp.AccessExpression.t;
+    access_kind: access_kind;
+    under_lock: bool;
+    location: Location.t;
+    is_struct_field: bool;
+  }
+  [@@deriving compare, equal, show {with_path= false}]
+end
+
+module MemoryAccessSet = PrettyPrintable.MakePPSet (MemoryAccess)
+
 (* ************************************ Astate ************************************************** *)
 
 (** A pretty-printable function for printing 'CallSet.t list' with elements' indices. *)
@@ -41,7 +58,9 @@ type t_element =
   { atomic_calls: AtomicCallsSet.t
   ; final_atomic_calls: CallsSet.t
   ; calls: (CallSet.t list[@printer pp_calls])
-  ; guards: Guards.t }
+  ; guards: Guards.t
+  ; memory_accesses: MemoryAccessSet.t
+  }
 [@@deriving compare, equal, show {with_path= false}]
 
 (** A set of types 't_element' is an abstract state. *)
@@ -72,8 +91,9 @@ let initial : t =
     { atomic_calls= AtomicCallsSet.empty
     ; final_atomic_calls= CallsSet.empty
     ; calls= [CallSet.empty]
-    ; guards= Guards.empty }
-
+    ; guards= Guards.empty
+    ; memory_accesses= MemoryAccessSet.empty
+    }
 
 (** Reduces a set of calls: removes call locations if the call is already present. *)
 let reduce_call_set ~(contains_call : call -> bool) : CallSet.t -> CallSet.t =
@@ -261,6 +281,67 @@ let final_update : t -> t =
   in
   Fn.compose reduce_atomic_calls (TSet.map mapper)
 
+  (* ************************************ Memory accesses *********************************************** *)
+  let is_memory_access_under_lock (astate: t) : bool =
+  TSet.exists (fun {atomic_calls} ->
+    AtomicCallsSet.exists (fun (_calls, lock) ->
+      Lock.is_locked lock
+    ) atomic_calls
+  ) astate
+
+  let is_struct_field_access (access_expr: HilExp.AccessExpression.t) : bool =
+      match HilExp.AccessExpression.to_access_path access_expr with
+      | (_base, accesses) ->
+          List.exists accesses ~f:(function
+            | AccessPath.FieldAccess _ -> true
+            | _ -> false)
+
+  let apply_lhs_memory_access ~(lhs: HilExp.AccessExpression.t) ~(loc: Location.t) ~(under_lock: bool) : t -> t =
+      let is_field = is_struct_field_access lhs in  (* Check if LHS is a struct field access *)
+      let mapper ({memory_accesses} as astate_el : t_element) : t_element =
+        let memory_access = {
+          MemoryAccess.access_path = lhs;
+          access_kind = Write;
+          under_lock;
+          location = loc;
+          is_struct_field = is_field;  (* Track if LHS is a struct field access *)
+        } in
+        let memory_accesses = MemoryAccessSet.add memory_access memory_accesses in
+        {astate_el with memory_accesses}
+      in
+      TSet.map mapper
+
+  let rec collect_access_expressions (e: HilExp.t) : HilExp.AccessExpression.t list =
+      match e with
+      | HilExp.AccessExpression access_expr -> [access_expr]
+      | HilExp.Constant _ -> []
+      | HilExp.Cast (_, subexp) -> collect_access_expressions subexp
+      | HilExp.UnaryOperator (_, subexp, _) -> collect_access_expressions subexp
+      | HilExp.BinaryOperator (_, e1, e2) ->
+          collect_access_expressions e1 @ collect_access_expressions e2
+      | HilExp.Closure _ -> []
+      | HilExp.Sizeof _ -> []
+      | HilExp.Exception _ -> []
+
+    let apply_rhs_memory_access ~(rhs: HilExp.t) ~(loc: Location.t) ~(under_lock: bool) : t -> t =
+      let access_exprs = collect_access_expressions rhs in
+      let mapper ({memory_accesses} as astate_el) : t_element =
+        let memory_accesses =
+          List.fold access_exprs ~init:memory_accesses ~f:(fun acc access_expr ->
+              let is_field = is_struct_field_access access_expr in
+              let memory_access = {
+                MemoryAccess.access_path = access_expr;
+                access_kind = Read;
+                under_lock;
+                location = loc;
+                is_struct_field = is_field;
+              } in
+              MemoryAccessSet.add memory_access acc
+          )
+        in
+        {astate_el with memory_accesses}
+      in
+      TSet.map mapper
 
 (* ************************************ Operators *********************************************** *)
 
