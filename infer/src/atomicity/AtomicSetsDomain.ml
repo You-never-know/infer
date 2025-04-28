@@ -35,9 +35,9 @@ module MemoryAccess = struct
 
   type t = {
     access_path: HilExp.AccessExpression.t;
+    location: Location.t;
     access_kind: access_kind;
     under_lock: bool;
-    location: Location.t;
     is_struct_field: bool;
   }
   [@@deriving compare, equal, show {with_path= false}]
@@ -296,18 +296,44 @@ let final_update : t -> t =
             | AccessPath.FieldAccess _ -> true
             | _ -> false)
 
-  let apply_lhs_memory_access ~(lhs: HilExp.AccessExpression.t) ~(loc: Location.t) ~(under_lock: bool) : t -> t =
-      let is_field = is_struct_field_access lhs in  (* Check if LHS is a struct field access *)
+  let is_pointer (lhs: HilExp.AccessExpression.t) ~tenv : bool =
+      match lhs with
+      | HilExp.AccessExpression.Base (_, _) ->
+          (* Retrieve the type of the variable using AccessExpression.get_typ *)
+          (match HilExp.AccessExpression.get_typ lhs tenv with
+           | Some typ ->
+               Typ.is_pointer typ  (* Check if the type is a pointer type *)
+           | None ->
+               (* If no type found, assume it's not a pointer *)
+               false)
+      | _ ->
+          (* Ignore other types of access expressions, such as fields or dereferences *)
+          false
+
+  let apply_lhs_memory_access ~(lhs: HilExp.AccessExpression.t) ~(loc: Location.t) ~(under_lock: bool) ~(tenv: Tenv.t) : t -> t =
+      let is_field = is_struct_field_access lhs in
+
+      let is_relevant_access lhs =
+        match lhs with
+        | HilExp.AccessExpression.Base (var, _) ->
+            not (Var.is_return var)  (* Use the built-in is_return function *)
+            && (Var.is_global var || is_pointer lhs ~tenv)
+        | _ -> false
+      in
+
       let mapper ({memory_accesses} as astate_el : t_element) : t_element =
-        let memory_access = {
-          MemoryAccess.access_path = lhs;
-          access_kind = Write;
-          under_lock;
-          location = loc;
-          is_struct_field = is_field;  (* Track if LHS is a struct field access *)
-        } in
-        let memory_accesses = MemoryAccessSet.add memory_access memory_accesses in
-        {astate_el with memory_accesses}
+        if is_relevant_access lhs then
+          let memory_access = {
+            MemoryAccess.access_path = lhs;
+            location = loc;
+            access_kind = Write;
+            under_lock;
+            is_struct_field = is_field;
+          } in
+          let memory_accesses = MemoryAccessSet.add memory_access memory_accesses in
+          {astate_el with memory_accesses}
+        else
+          astate_el
       in
       TSet.map mapper
 
@@ -323,20 +349,37 @@ let final_update : t -> t =
       | HilExp.Sizeof _ -> []
       | HilExp.Exception _ -> []
 
-    let apply_rhs_memory_access ~(rhs: HilExp.t) ~(loc: Location.t) ~(under_lock: bool) : t -> t =
+    let apply_rhs_memory_access ~(rhs: HilExp.t) ~(loc: Location.t) ~(under_lock: bool) ~(tenv: Tenv.t) : t -> t =
       let access_exprs = collect_access_expressions rhs in
-      let mapper ({memory_accesses} as astate_el) : t_element =
+      let mapper ({memory_accesses} as astate_el : t_element) : t_element =
         let memory_accesses =
           List.fold access_exprs ~init:memory_accesses ~f:(fun acc access_expr ->
-              let is_field = is_struct_field_access access_expr in
-              let memory_access = {
-                MemoryAccess.access_path = access_expr;
-                access_kind = Read;
-                under_lock;
-                location = loc;
-                is_struct_field = is_field;
-              } in
-              MemoryAccessSet.add memory_access acc
+            let is_field = is_struct_field_access access_expr in
+            let memory_access = {
+              MemoryAccess.access_path = access_expr;
+              location = loc;
+              access_kind = Read;
+              under_lock;
+              is_struct_field = is_field;
+            } in
+            (* Check if the access expression is relevant (global or pointer) *)
+            let should_add_access =
+              match access_expr with
+              | HilExp.AccessExpression.Base (var, _) ->
+                  (* Track only if it's a global variable or pointer *)
+                  (Var.is_global var) || (is_pointer access_expr ~tenv)
+              | HilExp.AccessExpression.FieldOffset (ae, _) ->
+                  is_pointer ae ~tenv  (* Check if the field's base is a pointer *)
+              | HilExp.AccessExpression.ArrayOffset (ae, _, _) ->
+                  is_pointer ae ~tenv  (* Check if the array's base is a pointer *)
+              | HilExp.AccessExpression.AddressOf ae | HilExp.AccessExpression.Dereference ae ->
+                  (* AddressOf and Dereference are usually associated with pointers *)
+                  is_pointer ae ~tenv
+            in
+            if should_add_access then
+              MemoryAccessSet.add memory_access acc  (* Add memory access if relevant *)
+            else
+              acc  (* Do nothing if the access is not relevant *)
           )
         in
         {astate_el with memory_accesses}
@@ -365,26 +408,54 @@ let widen ~(prev : t) ~(next : t) ~(num_iters : int) : t =
 (* ************************************ Summary ************************************************* *)
 
 module Summary = struct
-  type t = {atomic_calls: CallsSet.t; calls: (CallSet.t list[@printer pp_calls])}
+  type t =
+  { atomic_calls: CallsSet.t
+  ; calls: (CallSet.t list[@printer pp_calls])
+  ; memory_accesses: MemoryAccessSet.t
+  }
   [@@deriving compare, equal, show {with_path= false}]
 
   let create (astate : astate) : t =
     let atomic_calls : CallsSet.t ref = ref CallsSet.empty
-    and s_calls : CallSet.t list ref = ref [] in
-    let iterator ({final_atomic_calls; calls} : t_element) : unit =
+    and s_calls : CallSet.t list ref = ref []
+    and memory_accesses : MemoryAccessSet.t ref = ref MemoryAccessSet.empty
+    in
+    let iterator ({final_atomic_calls; calls; memory_accesses= mem_accs} : t_element) : unit =
+      (* Merge atomic calls *)
       atomic_calls := CallsSet.union final_atomic_calls !atomic_calls ;
-      let iterator (i : int) (calls : CallSet.t) : unit =
-        if not (CallSet.is_empty calls) then
+
+      (* Merge calls *)
+      let merge_calls (i : int) (calls_i : CallSet.t) : unit =
+        if not (CallSet.is_empty calls_i) then
           s_calls :=
             if Option.is_some (List.nth !s_calls i) then
-              List.mapi !s_calls ~f:(fun (j : int) : (CallSet.t -> CallSet.t) ->
-                  if Int.equal i j then CallSet.union calls else Fn.id )
-            else !s_calls @ [calls]
+              List.mapi !s_calls ~f:(fun (j : int) ->
+                  if Int.equal i j then CallSet.union calls_i else Fn.id)
+            else
+              !s_calls @ [calls_i]
       in
-      List.iteri calls ~f:iterator
+      List.iteri calls ~f:merge_calls ;
+
+      (* Merge memory accesses *)
+      memory_accesses := MemoryAccessSet.union mem_accs !memory_accesses
     in
     TSet.iter iterator astate ;
-    {atomic_calls= !atomic_calls; calls= !s_calls}
+
+    (* Build the summary *)
+    { atomic_calls= !atomic_calls
+    ; calls= !s_calls
+    ; memory_accesses= !memory_accesses
+    }
+
+   let is_top_level_fun (pname : Procname.t) (summaries : (Procname.t * t) list) : bool =
+      List.for_all summaries ~f:(fun (pname', {calls}) ->
+        Procname.equal pname' pname ||
+        List.for_all calls ~f:(fun callset ->
+          not (List.exists ~f:(fun (call_name, _) ->
+            String.equal (Procname.to_string pname) call_name
+          ) (CallSet.elements callset))
+        )
+      )
 
 
   let print_atomic_sets ~(f_name : string) (oc : Out_channel.t) (summaries : (Procname.t * t) list)
@@ -416,30 +487,76 @@ module Summary = struct
       , CallsSet.fold
           (fun (calls : CallSet.t) : (int -> int) -> ( + ) (CallSet.cardinal calls))
           atomic_calls 0 ) )
+
+     let print_memory_accesses (oc : Out_channel.t) (_summaries : (Procname.t * t) list)
+        ({memory_accesses} : t) : unit =
+      if MemoryAccessSet.is_empty memory_accesses then ()
+      else (
+        let accesses = MemoryAccessSet.elements memory_accesses in
+        let location_to_string (loc : Location.t) : string =
+          Format.asprintf "%a" Location.pp loc
+        in
+        let access_path_to_string (ap : HilExp.AccessExpression.t) : string =
+          Format.asprintf "%a" HilExp.AccessExpression.pp ap
+        in
+        let access_kind_to_string (ak : MemoryAccess.access_kind) : string =
+          match ak with
+          | Read -> "Read"
+          | Write -> "Write"
+        in
+        let print_access (access : MemoryAccess.t) : unit =
+          Out_channel.fprintf oc
+            "{ access_path: %s; location: %s; access_kind: %s; under_lock: %b; is_struct_field: %b }\n"
+            (access_path_to_string access.access_path)
+            (location_to_string access.location)
+            (access_kind_to_string access.access_kind)
+            access.under_lock
+            access.is_struct_field
+        in
+        List.iter accesses ~f:print_access
+      )
 end
 
-let apply_summary ({calls= s_calls} : Summary.t) : t -> t =
-  if List.is_empty s_calls then Fn.id
+let apply_summary ({calls= s_calls; memory_accesses= s_memory_accesses} : Summary.t) : t -> t =
+  if List.is_empty s_calls && MemoryAccessSet.is_empty s_memory_accesses then
+    Fn.id
   else
-    let mapper ({atomic_calls; calls} as astate_el : t_element) : t_element =
+    let mapper ({atomic_calls; calls; memory_accesses} as astate_el : t_element) : t_element =
       let calls : CallSet.t list ref = ref calls
       and joined_calls : CallSet.t ref = ref CallSet.empty in
+
       let iterator (i : int) (calls' : CallSet.t) : unit =
         if i < Config.atomic_sets_functions_depth_limit && not (CallSet.is_empty calls') then (
           joined_calls := CallSet.union calls' !joined_calls ;
           calls :=
             if Option.is_some (List.nth !calls (i + 1)) then
-              List.mapi !calls ~f:(fun (j : int) : (CallSet.t -> CallSet.t) ->
-                  if Int.equal (i + 1) j then CallSet.union calls' else Fn.id )
-            else !calls @ [calls'] )
+              List.mapi !calls ~f:(fun (j : int) ->
+                  if Int.equal (i + 1) j then CallSet.union calls' else Fn.id)
+            else
+              !calls @ [calls']
+        )
       in
       List.iteri s_calls ~f:iterator ;
-      let atomic_calls : AtomicCallsSet.t =
+      (* Handle memory accesses *)
+      let memory_accesses =
+        if is_memory_access_under_lock (TSet.singleton astate_el) then
+          (* If under lock, mark all imported accesses as under_lock = true *)
+          let locked_accesses =
+            MemoryAccessSet.map (fun access ->
+              { access with under_lock = true }
+            ) s_memory_accesses
+          in
+          MemoryAccessSet.union memory_accesses locked_accesses
+        else
+          (* Otherwise, just merge normally *)
+          MemoryAccessSet.union memory_accesses s_memory_accesses
+      in
+      let atomic_calls =
         AtomicCallsSet.map
           (fun ((calls, lock) : atomic_calls) : atomic_calls ->
-            (CallSet.union calls !joined_calls, lock) )
+            (CallSet.union calls !joined_calls, lock))
           atomic_calls
       in
-      update_astate_el_after_calls {astate_el with atomic_calls; calls= !calls}
+      update_astate_el_after_calls {astate_el with atomic_calls; calls= !calls; memory_accesses}
     in
     Fn.compose reduce_atomic_calls (TSet.map mapper)

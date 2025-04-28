@@ -100,8 +100,8 @@ module TransferFunctions (CFG : ProcCfg.S) = struct
             if Config.atomic_sets_track_memory_access then
                 let under_lock = Domain.is_memory_access_under_lock astate in
                 astate
-                |> Domain.apply_lhs_memory_access ~lhs ~loc ~under_lock
-                |> Domain.apply_rhs_memory_access ~rhs ~loc ~under_lock
+                |> Domain.apply_lhs_memory_access ~lhs ~loc ~under_lock ~tenv:analysis_data.tenv
+                |> Domain.apply_rhs_memory_access ~rhs ~loc ~under_lock ~tenv:analysis_data.tenv
             else astate
     | Assume (_, _, _, _) ->
         astate
@@ -141,30 +141,52 @@ let analyse_procedure ({proc_desc} as analysis_data : Domain.Summary.t Interproc
           Procname.pp pname
 
 
-let print_atomic_sets (analysis_data : Domain.Summary.t InterproceduralAnalysis.file_t) : IssueLog.t
-    =
-  (* Print to a file. *)
+let print_memory_accesses (analysis_data : Domain.Summary.t InterproceduralAnalysis.file_t) : unit =
+  let memory_accesses_file = Filename.concat (Sys.getcwd ()) "memory_accesses" in
+  let oc : Out_channel.t =
+    Out_channel.create ~binary:false ~append:false memory_accesses_file
+  in
+  let summaries : (Procname.t * Domain.Summary.t) list = file_summaries analysis_data in
+  let print_memory_accesses ((pname : Procname.t), (summary : Domain.Summary.t)) : unit =
+    if (Domain.Summary.is_top_level_fun pname summaries) then
+        Domain.Summary.print_memory_accesses oc summaries summary
+  in
+  List.iter summaries ~f:print_memory_accesses ;
+  Out_channel.close oc ;
+  F.fprintf F.std_formatter "Memory accesses have been printed into the file '%s'.\n"
+    memory_accesses_file
+
+let print_atomic_sets (analysis_data : Domain.Summary.t InterproceduralAnalysis.file_t) : IssueLog.t =
+  (* Atomic sets file *)
   let oc : Out_channel.t =
     Out_channel.create ~binary:false ~append:Config.atomic_sets_file_append atomic_sets_file
   and procedures_count : int ref = ref 0
   and atomic_sets_count : int ref = ref 0
   and atomic_functions_count : int ref = ref 0 in
+
   let summaries : (Procname.t * Domain.Summary.t) list = file_summaries analysis_data in
+
+  (* Print atomic sets *)
   let print_atomic_sets ((pname : Procname.t), (summary : Domain.Summary.t)) : unit =
-    let (atomic_sets_count' : int), (atomic_functions_count' : int) =
+    let (atomic_sets_count', atomic_functions_count') =
       Domain.Summary.print_atomic_sets ~f_name:(Procname.to_string pname) oc summaries summary
     in
     if not (Int.equal atomic_sets_count' 0) then incr procedures_count ;
     atomic_sets_count := atomic_sets_count' + !atomic_sets_count ;
     atomic_functions_count := atomic_functions_count' + !atomic_functions_count
   in
+
   List.iter summaries ~f:print_atomic_sets ;
-  (* Print stats. *)
   if not (Int.equal !procedures_count 0) then Out_channel.newline oc ;
   Out_channel.fprintf oc
     "%c Number of (analysed functions; atomic sets; atomic functions): (%i; %i; %i)\n"
     file_comment_char !procedures_count !atomic_sets_count !atomic_functions_count ;
   Out_channel.close oc ;
+
+  (* If configured, also print memory accesses *)
+  if Config.atomic_sets_track_memory_access then
+    print_memory_accesses analysis_data ;
+
   F.fprintf F.std_formatter "The detection of atomic sets produced an output into the file '%s'.\n"
     atomic_sets_file ;
   IssueLog.empty

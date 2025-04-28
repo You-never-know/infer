@@ -1,0 +1,2 @@
+{ access_path: shared_counter; location: line 11, column 9; access_kind: Read; under_lock: false; is_struct_field: false }
+{ access_path: shared_counter; location: line 11, column 9; access_kind: Write; under_lock: false; is_struct_field: false }

@@ -1,0 +1,3 @@
+{ access_path: shared_resource; location: line 12, column 5; access_kind: Read; under_lock: true; is_struct_field: false }
+{ access_path: shared_resource; location: line 12, column 5; access_kind: Write; under_lock: true; is_struct_field: false }
+{ access_path: *arg; location: line 22, column 14; access_kind: Read; under_lock: false; is_struct_field: false }

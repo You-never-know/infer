@@ -38,10 +38,11 @@ val final_update : t -> t
 (** Updates an abstract state at the end of a function. *)
 
 (* ************************************ Memory Access ************************************************* *)
-val apply_lhs_memory_access : lhs:HilExp.access_expression -> loc:Location.t -> under_lock:bool -> astate -> astate
+val apply_lhs_memory_access : lhs:HilExp.access_expression -> loc:Location.t -> under_lock:bool -> tenv:Tenv.t
+                              -> astate -> astate
 (** Apply write memory access *)
 
-val apply_rhs_memory_access : rhs:HilExp.t -> loc:Location.t -> under_lock:bool -> astate -> astate
+ val apply_rhs_memory_access : rhs:HilExp.t -> loc:Location.t -> under_lock:bool -> tenv:Tenv.t -> astate -> astate
 (** Apply read memory access *)
 
 val is_memory_access_under_lock : t -> bool
@@ -55,6 +56,13 @@ module Summary : sig
 
   val create : astate -> t
   (** Converts an abstract state to a summary. *)
+
+  val is_top_level_fun : Procname.t -> (Procname.t * t) list -> bool
+  (** Checks if a function is top-level, meaning it is not called by any other function. *)
+
+  val print_memory_accesses : Out_channel.t -> (Procname.t * t) list -> t -> unit
+  (** Print all memory accesses for the given function into the output channel [oc].
+    Only accesses directly belonging to the function (not its callees) are printed. *)
 
   val print_atomic_sets : f_name:string -> Out_channel.t -> (Procname.t * t) list -> t -> int * int
   (** Prints atomic sets from a given summary together with a function name to a given output
