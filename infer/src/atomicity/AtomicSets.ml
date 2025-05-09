@@ -144,7 +144,7 @@ let analyse_procedure ({proc_desc} as analysis_data : Domain.Summary.t Interproc
 let print_memory_accesses (analysis_data : Domain.Summary.t InterproceduralAnalysis.file_t) : unit =
   let memory_accesses_file = Filename.concat (Sys.getcwd ()) "memory_accesses" in
   let oc : Out_channel.t =
-    Out_channel.create ~binary:false ~append:false memory_accesses_file
+    Out_channel.create ~binary:false ~append:true memory_accesses_file
   in
   let summaries : (Procname.t * Domain.Summary.t) list = file_summaries analysis_data in
   let print_memory_accesses ((pname : Procname.t), (summary : Domain.Summary.t)) : unit =

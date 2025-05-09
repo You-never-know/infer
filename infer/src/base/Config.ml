@@ -3720,12 +3720,26 @@ and atomicity_violation_min_limit_to_print : int ref =
      be handy, when you have lot of false positives, as you can say, that the violation needs to occur at least twice \
      to be printed at the end of the analysis. A default value is '1'."
 
+and atomicity_violation_max_limit_to_print : int ref =
+    CLOpt.mk_int ~default:100 ~long:"atomicity_violation_max_limit_to_print"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify the maximum amount any atomicity violation can still occur (per file) to be printed out in the result. \
+    This can be handy, when you have lot of false positives, as you can say, that the violation can occur at maximum \
+    10 times to be printer, because otherwise it is suspiciously too much. Default value is '100'."
+
 and atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print : int ref =
     CLOpt.mk_int ~default:0 ~long:"atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print"
     ~in_help:[(Analyze, manual_atomicity_violations)]
     "Specify the minimum percentage (rounded to the whole percent) of violations/correct_usage of atomic pairs \
     for them to be printed out. This allows you to specify that a violations of atomic pairs should be for example
     reported only if 50/70/90 percent of the atomic pair calls are without the proper locking. A default value is '0'"
+
+and atomicity_violation_max_percentage_of_atomicity_violations_for_pairs_to_print : int ref =
+    CLOpt.mk_int ~default:100 ~long:"atomicity_violation_max_percentage_of_atomicity_violations_for_pairs_to_print"
+    ~in_help:[(Analyze, manual_atomicity_violations)]
+    "Specify the maximum percentage (rounded to the whole percent) of violations/correct_usage of atomic pairs \
+    for them to be printed out. This allows you to specify that a violations of atomic pairs should be for example \
+    reported if less than X percent of the atomic pair calls are without the proper locking. A default value is '100'"
 
 and atomic_sets_ignore_single_atomic_calls : bool ref =
   CLOpt.mk_bool ~default:false ~long:"atomic-sets-ignore-single-atomic-calls"
@@ -5085,8 +5099,13 @@ and atomic_sets_functions_depth_limit : int = !atomic_sets_functions_depth_limit
 
 and atomicity_violation_min_limit_to_print : int = !atomicity_violation_min_limit_to_print
 
+and atomicity_violation_max_limit_to_print : int = !atomicity_violation_max_limit_to_print
+
 and atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print : int =
     !atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print
+
+and atomicity_violation_max_percentage_of_atomicity_violations_for_pairs_to_print : int =
+    !atomicity_violation_max_percentage_of_atomicity_violations_for_pairs_to_print
 
 and atomic_sets_ignore_single_atomic_calls : bool = !atomic_sets_ignore_single_atomic_calls
 

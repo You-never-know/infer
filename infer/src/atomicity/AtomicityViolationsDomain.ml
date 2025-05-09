@@ -52,8 +52,11 @@ module Violations : sig
   val is_empty : t -> bool
   (** Checks whether there are any violations to be reported. *)
 
-  val add : Procname.t -> calls_pair -> Location.t -> t -> t
+  val add : Procname.t -> calls_pair -> Location.t -> severity -> t -> t
   (** Adds a new violation to be reported. *)
+
+  val add_as_error : Procname.t -> calls_pair -> Location.t -> t -> t
+  (** Adds a new violation to be reported with severity = Error. *)
 
   val union : t -> t -> t
   (** Makes the union of atomicity violations to be reported. *)
@@ -91,7 +94,10 @@ end = struct
 
   let get_dummy_proc : Procname.t = Procname.empty_block
 
-  let add (proc : Procname.t) (pair : calls_pair) (loc : Location.t) : t -> t =
+  let add (proc : Procname.t) (pair : calls_pair) (loc : Location.t) (severity : severity) : t -> t =
+    ViolationSet.add {proc; pair; loc; severity}
+
+  let add_as_error (proc : Procname.t) (pair : calls_pair) (loc : Location.t) : t -> t =
     ViolationSet.add {proc; pair; loc; severity= Error}
 
   let union : t -> t -> t = ViolationSet.union
@@ -302,7 +308,7 @@ let apply_call ~(f_name : string) (loc : Location.t) : t -> t =
 
     (* Check last_pair for violation or correct usage *)
     if atomic_pairs#check_violating_atomicity_bool last_pair ~atomic_last_pairs ~check_first_empty:true then
-      violations := Violations.add dummy_proc last_pair loc !violations
+      violations := Violations.add_as_error dummy_proc last_pair loc !violations
     else if AtomicPairSet.mem_pair last_pair atomic_last_pairs then
       correct_usages := add_to_correct_usage_set last_pair loc !correct_usages ;
 
@@ -315,7 +321,7 @@ let apply_call ~(f_name : string) (loc : Location.t) : t -> t =
           atomic_last_pairs
       in
       if atomic_pairs#check_violating_atomicity_bool p ~atomic_last_pairs ~check_first_empty:false then
-        violations := Violations.add dummy_proc p loc !violations
+        violations := Violations.add_as_error dummy_proc p loc !violations
       else if AtomicPairSet.mem_pair p atomic_last_pairs then
         correct_usages := add_to_correct_usage_set p loc !correct_usages
     in
@@ -633,10 +639,12 @@ let iterate_over_violations_in_summary (summary : t) (violationCountSet : violat
     (* Format.print_flush (); *)
       let new_violations =
         Violations.fold
-          ~f:(fun (proc, pair, loc, _) acc ->
+          ~f:(fun (proc, pair, loc, severity) acc ->
             match violation_set_find_pair_and_get_count pair violationCountSet with
-            | Some count when count >= Config.atomicity_violation_min_limit_to_print ->
-                Violations.add proc pair loc acc
+            | Some count
+                when (count >= Config.atomicity_violation_min_limit_to_print) &&
+                     (count <= Config.atomicity_violation_max_limit_to_print) ->
+                Violations.add proc pair loc severity acc
             | _ -> acc)
           state.violations
           Violations.empty
@@ -671,20 +679,25 @@ let count_correct_usages (summaries : (Procname.t * t) list) : correct_usage_cou
     ~init:CorrectUsageCountSet.empty
     summaries
 
-  let passed_relative_limit (violation_count : int option) (correct_usage_counts : int option) : bool =
-    match violation_count with
-        | None -> false (* There are no atomic pair violations, it should not get reported *)
-        | Some v_count ->
-            match correct_usage_counts with
-                | None -> true (* There are only incorrect usages of atomic pairs, it should definitely be reported *)
-                | Some c_count ->
-                    let min_percentage = Config.atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print in
-                    let total_count = v_count + c_count in
-                    let violation_percentage = int_of_float ((float_of_int v_count /. float_of_int total_count) *. 100.0) in
-(*                   Format.printf "Violation count: %d, Correct count: %d, Total: %d, Violation %%: %d%%, Min required %%: %d%%@." *)
-(*                        v_count c_count total_count violation_percentage min_percentage; *)
-(*                   Format.print_flush (); *)
-                    violation_percentage >= min_percentage
+    let passed_relative_limit (violation_count : int option) (correct_usage_counts : int option) : bool =
+      match violation_count with
+      | None -> false
+      | Some v_count ->
+          let c_count = match correct_usage_counts with Some c -> c | None -> 0 in
+          let min_percentage = Config.atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print in
+          let max_percentage = Config.atomicity_violation_max_percentage_of_atomicity_violations_for_pairs_to_print in
+          let total_count = v_count + c_count in
+          let violation_percentage =
+            if Int.equal total_count 0 then 0
+            else int_of_float ((float_of_int v_count /. float_of_int total_count) *. 100.0)
+          in
+          let passed =
+            (violation_percentage >= min_percentage) &&
+            (violation_percentage <= max_percentage)
+          in
+          passed
+
+
 
   let filter_summary_relative_limit (violationCountSet : violation_count_set) (correctUsageSet : correct_usage_count_set)
                                     (summaries : (Procname.t * t) list) (summary : Procname.t * t) : Procname.t * t =
@@ -698,11 +711,11 @@ let count_correct_usages (summaries : (Procname.t * t) list) : correct_usage_cou
 (*     Format.print_flush (); *)
         let new_violations =
           Violations.fold
-              ~f:(fun (proc, pair, loc, _) acc ->
+              ~f:(fun (proc, pair, loc, severity) acc ->
                 let violation_count = violation_set_find_pair_and_get_count pair violationCountSet in
                 let correct_usage_count = correct_usage_set_find_pair_and_get_count pair correctUsageSet in
                 if passed_relative_limit violation_count correct_usage_count then
-                    Violations.add proc pair loc acc
+                    Violations.add proc pair loc severity acc
                 else
                     acc
               )
@@ -713,19 +726,23 @@ let count_correct_usages (summaries : (Procname.t * t) list) : correct_usage_cou
 
   let filter_summaries (summaries : (Procname.t * t) list) =
       if Config.atomicity_violation_min_limit_to_print <= 1
-         && Config.atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print <= 0 then
+         && Config.atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print <= 0
+         && Config.atomicity_violation_max_limit_to_print >= 100
+         && Config.atomicity_violation_max_percentage_of_atomicity_violations_for_pairs_to_print >= 100
+      then
         summaries
       else
         let violation_counts = count_violations summaries in
         let summaries_after_hard_filter =
-          if Config.atomicity_violation_min_limit_to_print > 1 then
+          if (Config.atomicity_violation_min_limit_to_print > 1) || (Config.atomicity_violation_max_limit_to_print < 100) then
             List.map summaries ~f:(filter_summary_hard_limit violation_counts summaries)
           else
             summaries
         in
         let correct_usage_counts = count_correct_usages summaries in
         let summaries_after_relative_filter =
-          if Config.atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print > 0 then
+          if (Config.atomicity_violation_min_percentage_of_atomicity_violations_for_pairs_to_print > 0)
+          || (Config.atomicity_violation_max_percentage_of_atomicity_violations_for_pairs_to_print < 100) then
             List.map summaries_after_hard_filter ~f:(filter_summary_relative_limit violation_counts correct_usage_counts summaries)
           else
             summaries_after_hard_filter
@@ -796,7 +813,7 @@ let apply_summary
           atomic_pairs#check_violating_atomicity_bool p ~atomic_last_pairs:atomic_last_pairs_mapped
         in
         if is_violation then
-          violations := Violations.add dummy_proc p loc !violations
+          violations := Violations.add_as_error dummy_proc p loc !violations
         else if AtomicPairSet.mem_pair p atomic_last_pairs_mapped then
           correct_usages := add_to_correct_usage_set p loc !correct_usages
       in
